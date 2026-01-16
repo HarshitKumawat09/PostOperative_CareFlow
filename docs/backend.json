@@ -1,0 +1,375 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user (e.g., patient, staff)."
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Reference to Doctor. (Relationship: Doctor 1:N UserProfile) The ID of the doctor assigned to the user, if applicable."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or description of the user."
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL of the user's profile image.",
+          "format": "uri"
+        },
+        "activeChatRequestId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The ID of the user's active or pending chat request."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "role"
+      ]
+    },
+    "Doctor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Doctor",
+      "type": "object",
+      "description": "Represents a doctor or medical staff member.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Doctor entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the doctor."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the doctor."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the doctor.",
+          "format": "email"
+        },
+        "specialization": {
+          "type": "string",
+          "description": "The doctor's area of specialization."
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "The doctor's contact phone number."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "specialization",
+        "contactNumber"
+      ]
+    },
+    "DailyLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyLog",
+      "type": "object",
+      "description": "Represents a patient's daily progress log.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DailyLog entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to UserProfile (patient). (Relationship: UserProfile 1:N DailyLog) The ID of the patient who created the log."
+        },
+        "painLevel": {
+          "type": "number",
+          "description": "The patient's reported pain level (1-10)."
+        },
+        "tasksCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the patient completed their assigned tasks for the day."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or comments from the patient."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the wound image uploaded by the patient.",
+          "format": "uri"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the log was created.",
+          "format": "date-time"
+        },
+        "doctorsRemarks": {
+          "type": "string",
+          "description": "Remarks or comments added by the doctor reviewing the log."
+        },
+        "acknowledged": {
+          "type": "boolean",
+          "description": "Indicates whether the log entry has been acknowledged by a staff member."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "painLevel",
+        "tasksCompleted",
+        "notes",
+        "imageUrl",
+        "timestamp"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a scheduled appointment for a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Appointment entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to UserProfile (patient). The ID of the patient for whom the appointment is scheduled."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date and time of the appointment in ISO string format.",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string",
+          "description": "The purpose or title of the appointment."
+        },
+        "with": {
+          "type": "string",
+          "description": "The name of the doctor or department for the appointment."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "date",
+        "title",
+        "with"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a message within an active chat.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The ID of the user who sent the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "text", "senderId", "timestamp"]
+    },
+    "EmergencyAlert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EmergencyAlert",
+      "type": "object",
+      "description": "Represents an emergency alert triggered by a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the EmergencyAlert entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to UserProfile (patient). The ID of the patient who triggered the alert."
+        },
+        "patientName": {
+          "type": "string",
+          "description": "The name of the patient who triggered the alert."
+        },
+        "location": {
+          "type": "string",
+          "description": "The patient's location at the time of the alert (if available)."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the alert was triggered.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the alert.",
+          "enum": [
+            "active",
+            "acknowledged"
+          ]
+        },
+        "staffId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The ID of the staff member who acknowledged the alert."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "patientName",
+        "timestamp",
+        "status"
+      ]
+    },
+    "ChatRequest": {
+      "title": "ChatRequest",
+      "type": "object",
+      "description": "A patient's request to start a chat with a staff member.",
+      "properties": {
+        "id": {"type": "string"},
+        "patientId": {"type": "string"},
+        "patientName": {"type": "string"},
+        "initialQuestion": {"type": "string"},
+        "status": {"type": "string", "enum": ["pending", "active"]},
+        "staffId": {"type": ["string", "null"]},
+        "activeChatId": {"type": ["string", "null"]},
+        "timestamp": {"type": "string", "format": "date-time"}
+      },
+      "required": ["id", "patientId", "patientName", "initialQuestion", "status", "timestamp"]
+    },
+    "ActiveChat": {
+      "title": "ActiveChat",
+      "type": "object",
+      "description": "Represents an active chat session between a patient and a staff member.",
+      "properties": {
+        "id": {"type": "string"},
+        "patientId": {"type": "string"},
+        "staffId": {"type": "string"},
+        "patientName": {"type": "string"},
+        "staffName": {"type": "string"},
+        "lastMessage": {"type": "string"},
+        "lastMessageTimestamp": {"type": "string", "format": "date-time"}
+      },
+      "required": ["id", "patientId", "staffId", "patientName", "staffName"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "schema": {
+            "$ref": "#/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Accessible only by the user with the matching userId, or any staff member."
+        }
+      },
+      {
+        "path": "/doctors/{doctorId}",
+        "definition": {
+          "schema": {
+            "$ref": "#/entities/Doctor"
+          },
+          "description": "Stores doctor profile information. Accessible by staff only."
+        }
+      },
+      {
+        "path": "/users/{userId}/daily_logs/{logId}",
+        "definition": {
+          "schema": {
+            "$ref": "#/entities/DailyLog"
+          },
+          "description": "Stores daily logs for a specific user. Accessible only by the user with the matching userId and staff assigned to the user."
+        }
+      },
+      {
+        "path": "/users/{userId}/appointments/{appointmentId}",
+        "definition": {
+          "schema": {
+            "$ref": "#/entities/Appointment"
+          },
+          "description": "Stores appointments for a specific user. Accessible only by the user with the matching userId and assigned staff."
+        }
+      },
+      {
+        "path": "/emergency_alerts/{alertId}",
+        "definition": {
+          "schema": {
+            "$ref": "#/entities/EmergencyAlert"
+          },
+          "description": "Stores emergency alerts triggered by patients. Accessible by staff only."
+        }
+      },
+      {
+        "path": "/chat_requests/{requestId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ChatRequest" },
+          "description": "Stores patient chat requests. Patients create them, staff listen and accept them."
+        }
+      },
+      {
+        "path": "/active_chats/{chatId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ActiveChat" },
+          "description": "Stores metadata for an active chat session between a patient and staff member."
+        }
+      },
+      {
+        "path": "/active_chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/Message" },
+          "description": "Sub-collection containing all messages for an active chat."
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed for secure, role-based access. The addition of `chat_requests` and `active_chats` collections facilitates a real-time, queue-based messaging system. `chat_requests` acts as a triage queue that any staff member can view, but which can only be 'claimed' by one staff member via a transaction. `active_chats` holds the metadata for ongoing conversations, with a `messages` sub-collection for the actual message content, ensuring that message history is tightly scoped and secure."
+  }
+}
