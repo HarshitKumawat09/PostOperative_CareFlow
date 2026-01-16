@@ -1,0 +1,75 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========== HELPER FUNCTIONS ===========
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    function isParticipant(chatDoc) {
+      // Check if the user is the patient or staff in a given chat.
+      return request.auth != null && (
+        request.auth.uid == chatDoc.data.patientId || request.auth.uid == chatDoc.data.staffId
+      );
+    }
+
+    // =========== USER & DOCTOR PROFILES ===========
+    match /users/{userId} {
+      // A user can get/update their own profile. Staff can get/update any profile.
+      allow get, update: if isOwner(userId) || (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff');
+      // Staff can list all users (e.g., for the triage dashboard).
+      allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+      // Anyone can create their own user document upon signup.
+      allow create: if isOwner(userId);
+      // Deleting profiles is disallowed.
+      allow delete: if false; 
+    }
+
+    match /doctors/{doctorId} {
+      // Only staff can manage doctor profiles.
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+
+    // =========== PATIENT DATA SUBCOLLECTIONS ===========
+    match /users/{userId}/{subcollection}/{docId} {
+      // User can manage their own subcollection data. Staff can also manage it.
+      allow read, write: if isOwner(userId) || (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff');
+    }
+
+    // =========== GLOBAL COLLECTIONS ===========
+    match /emergency_alerts/{alertId} {
+      // A patient can create their own alert. Only staff can read/write them.
+      allow create: if isOwner(request.resource.data.patientId);
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+
+    // =========== CHAT RULES ===========
+    match /chat_requests/{requestId} {
+      // Any authenticated user can create a chat request.
+      allow create: if request.auth != null;
+      // Staff can list all pending requests.
+      allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+      // A patient can get their own request. Staff can also get any request.
+      allow get: if (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff') || isOwner(resource.data.patientId);
+      // Only staff can update a request (to accept it).
+      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+
+    match /active_chats/{chatId} {
+      // Staff can query the active_chats collection to see their assigned chats.
+      allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+      // Staff or a participant can get a specific chat document.
+      allow get: if (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff') || isParticipant(resource);
+      // Only staff can create/update the chat metadata.
+      allow create, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+    
+    match /active_chats/{chatId}/messages/{messageId} {
+      // Only participants of the chat can read or write messages.
+      allow read, write: if isParticipant(get(/databases/$(database)/documents/active_chats/$(chatId)));
+    }
+  }
+}
