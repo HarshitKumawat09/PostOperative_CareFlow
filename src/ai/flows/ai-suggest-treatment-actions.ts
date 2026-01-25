@@ -8,8 +8,8 @@
  * - SuggestTreatmentActionsOutput - The return type for the suggestTreatmentActions function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generateJson } from '@/ai/genkit';
+import { z } from 'zod';
 
 const DailyLogSchema = z.object({
   painLevel: z.number().describe('Pain level reported by the patient (1-10).'),
@@ -36,40 +36,36 @@ const SuggestTreatmentActionsOutputSchema = z.object({
 export type SuggestTreatmentActionsOutput = z.infer<typeof SuggestTreatmentActionsOutputSchema>;
 
 export async function suggestTreatmentActions(input: SuggestTreatmentActionsInput): Promise<SuggestTreatmentActionsOutput> {
-  return suggestTreatmentActionsFlow(input);
+  const logsText = input.dailyLogs
+    .map(l => `- Pain Level: ${l.painLevel}, Wound Image: [image], Task Completion: ${l.taskCompletion.completed}, Additional Notes: ${l.additionalNotes}, Timestamp: ${l.timestamp}`)
+    .join('\n');
+
+  const prompt = `You are an AI assistant designed to analyze patient daily logs and suggest treatment actions or recommendations for medical staff.
+
+Analyze the following patient daily logs and identify any symptom clusters. Based on the identified symptom clusters and trends in the logs, suggest treatment actions or recommendations. Consider factors such as pain level, wound appearance (from the image description), task completion, and any additional notes provided by the patient.
+
+Patient ID: ${input.patientId}
+Daily Logs:\n${logsText}
+
+Respond ONLY with JSON in the following format and nothing else:
+{
+  "suggestedActions": ["..."],
+  "symptomClusters": ["..."]
+}`;
+
+  try {
+    const raw = await generateJson<unknown>(prompt);
+    return SuggestTreatmentActionsOutputSchema.parse(raw);
+  } catch (err: any) {
+    const msg = String(err?.message || err);
+    if (msg.includes('Missing GEMINI_API_KEY') || msg.includes('GOOGLE_API_KEY')) {
+      return {
+        suggestedActions: [
+          'AI unavailable. Please set GEMINI_API_KEY or GOOGLE_API_KEY and restart the server.',
+        ],
+        symptomClusters: [],
+      };
+    }
+    throw err;
+  }
 }
-
-const prompt = ai.definePrompt({
-  name: 'suggestTreatmentActionsPrompt',
-  input: {schema: SuggestTreatmentActionsInputSchema},
-  output: {schema: SuggestTreatmentActionsOutputSchema},
-  prompt: `You are an AI assistant designed to analyze patient daily logs and suggest treatment actions or recommendations for medical staff.
-
-  Analyze the following patient daily logs and identify any symptom clusters. Based on the identified symptom clusters and trends in the logs, suggest treatment actions or recommendations. Consider factors such as pain level, wound appearance (from the image description), task completion, and any additional notes provided by the patient.
-
-  Patient ID: {{{patientId}}}
-  Daily Logs:
-  {{#each dailyLogs}}
-  - Pain Level: {{{painLevel}}}, Wound Image: {{media url=woundImage}}, Task Completion: {{{taskCompletion.completed}}}, Additional Notes: {{{additionalNotes}}}, Timestamp: {{{timestamp}}}
-  {{/each}}
-
-  Present the output in JSON format including an array of suggested treatment actions and an array of identified symptom clusters. The suggested actions are concrete and actionable tasks for the staff member.
-  For Example:
-  {
-  "suggestedActions": ["Increase pain medication dosage", "Schedule a follow-up appointment to re-evaluate wound healing", "Consult with a physical therapist for mobility exercises"],
-  "symptomClusters": ["Elevated pain levels and signs of potential infection", "Decreased mobility and reduced task completion"]
-  }
-  `,
-});
-
-const suggestTreatmentActionsFlow = ai.defineFlow(
-  {
-    name: 'suggestTreatmentActionsFlow',
-    inputSchema: SuggestTreatmentActionsInputSchema,
-    outputSchema: SuggestTreatmentActionsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);

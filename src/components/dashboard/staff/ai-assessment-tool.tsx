@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { analyzePatientLogs } from '@/ai/flows/ai-symptom-assessment';
 import { suggestTreatmentActions } from '@/ai/flows/ai-suggest-treatment-actions';
+import { askGuidelineAssistant } from '@/ai/flows/ai-guideline-assistant';
 import { DailyLog, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,11 +34,59 @@ export function AiAssessmentTool({ currentLog, allLogs, patient }: AiAssessmentT
   const [isLoading, setIsLoading] = useState(false);
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
   const [treatment, setTreatment] = useState<TreatmentResult | null>(null);
+  const [guidelineQuestion, setGuidelineQuestion] = useState('');
+  const [guidelineAnswer, setGuidelineAnswer] = useState<string | null>(null);
+  const [guidelineSources, setGuidelineSources] = useState<string[] | null>(null);
+  const [isGuidelineLoading, setIsGuidelineLoading] = useState(false);
   const { toast } = useToast();
 
   // Helper to convert Firestore Timestamp to a readable string or number
   const formatTimestamp = (timestamp: Timestamp) => {
     return timestamp.toDate().toLocaleDateString();
+  };
+
+  const buildPatientSummary = () => {
+    const header = `Patient: ${patient.firstName || patient.lastName}\n` +
+      `Age: ${patient.age ?? 'N/A'} | Primary condition: ${patient.primaryCondition ?? 'N/A'}\n\n`;
+
+    const logsSummary = allLogs
+      .sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis())
+      .map(log =>
+        `Date: ${formatTimestamp(log.timestamp)} | Pain: ${log.painLevel}/10 | Tasks: ${
+          log.tasksCompleted ? 'completed' : 'not completed'
+        }\nNotes: ${log.notes || 'none'}`,
+      )
+      .join('\n---\n');
+
+    return header + logsSummary;
+  };
+
+  const handleAskGuideline = async () => {
+    if (!guidelineQuestion.trim()) return;
+
+    setIsGuidelineLoading(true);
+    setGuidelineAnswer(null);
+    setGuidelineSources(null);
+
+    try {
+      const summary = buildPatientSummary();
+      const result = await askGuidelineAssistant({
+        question: guidelineQuestion.trim(),
+        patientSummary: summary,
+      });
+
+      setGuidelineAnswer(result.answer);
+      setGuidelineSources(result.usedSources);
+    } catch (error) {
+      console.error('Guideline assistant failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Guideline Assistant Failed',
+        description: 'Could not fetch guideline-aware advice. Please try again.',
+      });
+    } finally {
+      setIsGuidelineLoading(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -99,7 +148,7 @@ export function AiAssessmentTool({ currentLog, allLogs, patient }: AiAssessmentT
       <CardContent>
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Use our AI tool to analyze this log in the context of the patient's history and get suggested actions.
+            Use AI to analyze this log in the context of the patient's history, and ask guideline-aware questions about their care.
           </p>
           <Button onClick={handleAnalyze} disabled={isLoading} className="w-full">
             {isLoading ? 'Analyzing...' : <><Bot className="mr-2 h-4 w-4" /> Generate Insights</>}
@@ -156,6 +205,41 @@ export function AiAssessmentTool({ currentLog, allLogs, patient }: AiAssessmentT
               </AccordionItem>
             </Accordion>
           )}
+
+          <div className="mt-6 space-y-3 border-t pt-4">
+            <h3 className="font-semibold flex items-center gap-2 text-primary">
+              <Sparkles className="w-4 h-4" /> Guideline Assistant (RAG)
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Ask a focused clinical question (for example: "Does this pattern of pain and task non-completion suggest I should bring the patient in sooner?").
+            </p>
+            <textarea
+              className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+              placeholder="Type your question here..."
+              value={guidelineQuestion}
+              onChange={e => setGuidelineQuestion(e.target.value)}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-center"
+              disabled={isGuidelineLoading || !guidelineQuestion.trim()}
+              onClick={handleAskGuideline}
+            >
+              {isGuidelineLoading ? 'Consulting guidelines...' : 'Ask Guideline Assistant'}
+            </Button>
+
+            {guidelineAnswer && (
+              <div className="mt-3 rounded-md border bg-muted/40 p-3 space-y-2 text-sm">
+                <p className="whitespace-pre-line text-muted-foreground">{guidelineAnswer}</p>
+                {guidelineSources && guidelineSources.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Sources: {guidelineSources.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

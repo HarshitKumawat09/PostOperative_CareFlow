@@ -10,6 +10,8 @@ export interface UserProfile {
   profileImageUrl?: string;
   doctorId?: string | null;
   activeChatRequestId?: string | null;
+  age?: number;
+  primaryCondition?: string;
 }
 
 export interface Doctor {

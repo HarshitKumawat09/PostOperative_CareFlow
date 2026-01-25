@@ -8,8 +8,8 @@
  * - AnalyzePatientLogsOutput - The return type for the analyzePatientLogs function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generateJson } from '@/ai/genkit';
+import { z } from 'zod';
 
 const AnalyzePatientLogsInputSchema = z.object({
   currentLog: z.string().describe('The current daily log entry from the patient.'),
@@ -33,37 +33,32 @@ const AnalyzePatientLogsOutputSchema = z.object({
 export type AnalyzePatientLogsOutput = z.infer<typeof AnalyzePatientLogsOutputSchema>;
 
 export async function analyzePatientLogs(input: AnalyzePatientLogsInput): Promise<AnalyzePatientLogsOutput> {
-  return analyzePatientLogsFlow(input);
+  const prompt = `You are an AI assistant that analyzes patient logs to identify potential issues.
+
+Analyze the patient's current log and previous logs to identify relevant symptoms and suggest possible symptom clusters that might indicate a worsening condition. Provide recommendations for doctors based on your analysis.
+
+Current Log: ${input.currentLog}
+Previous Logs:\n${input.previousLogs.map(l => `- ${l}`).join('\n')}
+
+Respond ONLY with JSON in the following format and nothing else:
+{
+  "relevantSymptoms": ["..."],
+  "suggestedSymptomClusters": ["..."],
+  "recommendations": "..."
+}`;
+
+  try {
+    const raw = await generateJson<unknown>(prompt);
+    return AnalyzePatientLogsOutputSchema.parse(raw);
+  } catch (err: any) {
+    const msg = String(err?.message || err);
+    if (msg.includes('Missing GEMINI_API_KEY') || msg.includes('GOOGLE_API_KEY')) {
+      return {
+        relevantSymptoms: [],
+        suggestedSymptomClusters: [],
+        recommendations: 'AI unavailable. Please set GEMINI_API_KEY or GOOGLE_API_KEY and restart the server.',
+      };
+    }
+    throw err;
+  }
 }
-
-const prompt = ai.definePrompt({
-  name: 'analyzePatientLogsPrompt',
-  input: {schema: AnalyzePatientLogsInputSchema},
-  output: {schema: AnalyzePatientLogsOutputSchema},
-  prompt: `You are an AI assistant that analyzes patient logs to identify potential issues.
-
-  Analyze the patient's current log and previous logs to identify relevant symptoms and suggest possible symptom clusters that might indicate a worsening condition. Provide recommendations for doctors based on your analysis.
-
-  Current Log: {{{currentLog}}}
-  Previous Logs: {{#each previousLogs}}{{{this}}}{{#unless @last}}\n---\n{{/unless}}{{/each}}
-
-  Output your response in JSON format:
-  {
-    "relevantSymptoms": ["..."],
-    "suggestedSymptomClusters": ["..."],
-    "recommendations": "..."
-  }
-  `,
-});
-
-const analyzePatientLogsFlow = ai.defineFlow(
-  {
-    name: 'analyzePatientLogsFlow',
-    inputSchema: AnalyzePatientLogsInputSchema,
-    outputSchema: AnalyzePatientLogsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
