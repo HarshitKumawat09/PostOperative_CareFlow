@@ -3,9 +3,10 @@ import { MessageSquareQuote } from 'lucide-react';
 
 interface DoctorsRemarksCardProps {
   latestRemark?: string | null;
+  timestamp?: any;
 }
 
-export function DoctorsRemarksCard({ latestRemark }: DoctorsRemarksCardProps) {
+export function DoctorsRemarksCard({ latestRemark, timestamp }: DoctorsRemarksCardProps) {
   return (
     <Card>
       <CardHeader>

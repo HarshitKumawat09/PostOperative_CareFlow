@@ -1,0 +1,21 @@
+{
+  "id": "protocol-1772295820526-912qquc24",
+  "content": "Test protocol after syntax fix",
+  "metadata": {
+    "title": "Syntax Fix Test",
+    "source": "Test",
+    "surgeryType": "knee_replacement",
+    "department": "Orthopedics",
+    "version": "1.0",
+    "uploadDate": "2026-02-28T16:23:40.523Z",
+    "lastUpdated": "2026-02-28T16:23:40.524Z",
+    "evidenceLevel": "moderate",
+    "keywords": [
+      "test",
+      "syntax"
+    ],
+    "id": "protocol-1772295820526-912qquc24"
+  },
+  "createdAt": "2026-02-28T16:23:40.528Z",
+  "updatedAt": "2026-02-28T16:23:40.528Z"
+}

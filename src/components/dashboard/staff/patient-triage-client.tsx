@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -13,44 +14,45 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import type { UserProfile } from '@/lib/types';
 import { CheckCircle, Info, RefreshCw } from 'lucide-react';
-import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 interface PatientTriageClientProps {
   patients: UserProfile[];
 }
 
-// A sub-component to fetch and calculate the status for a single patient
-function PatientRow({ patient, onClick }: { patient: UserProfile, onClick: (id: string) => void }) {
-  const { firestore } = useCollection.useFirebase();
+type TriageStatus = 'Needs Review' | 'On Track' | 'Pending';
 
-  const logsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, `users/${patient.id}/daily_logs`),
-      where('acknowledged', '==', false)
-    );
-  }, [firestore, patient.id]);
+interface SymptomSummary {
+  patientId: string;
+  lastEntryDate: string | null;
+  totalEntries: number;
+  activeAlerts: number;
+  riskLevel: 'Low' | 'Moderate' | 'High' | 'Critical' | 'Unknown';
+}
 
-  const { data: unacknowledgedLogs, isLoading } = useCollection(logsQuery);
-  
-  const lastLogQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-        collection(firestore, `users/${patient.id}/daily_logs`), 
-        orderBy('timestamp', 'desc'), 
-        limit(1)
-    );
-  }, [firestore, patient.id]);
+// A sub-component to render a single patient row based on pre-fetched summaries
+function PatientRow({
+  patient,
+  summary,
+  onClick,
+}: {
+  patient: UserProfile;
+  summary?: SymptomSummary;
+  onClick: (id: string) => void;
+}) {
+  let status: TriageStatus = 'Pending';
 
-  const { data: lastLogArr } = useCollection(lastLogQuery);
-
-
-  let status: 'Needs Review' | 'On Track' | 'Pending' = 'On Track';
-  if (isLoading) {
-    status = 'Pending';
-  } else if (unacknowledgedLogs && unacknowledgedLogs.length > 0) {
-    status = 'Needs Review';
+  if (summary) {
+    if (!summary.totalEntries) {
+      status = 'Pending';
+    } else if (
+      summary.riskLevel === 'High' ||
+      summary.riskLevel === 'Critical' ||
+      summary.activeAlerts > 0
+    ) {
+      status = 'Needs Review';
+    } else {
+      status = 'On Track';
+    }
   }
 
   return (
@@ -69,7 +71,9 @@ function PatientRow({ patient, onClick }: { patient: UserProfile, onClick: (id: 
           </Badge>
       </TableCell>
       <TableCell className="text-right">
-          {lastLogArr && lastLogArr.length > 0 ? new Date(lastLogArr[0].timestamp.toDate()).toLocaleDateString() : 'N/A'}
+        {summary?.lastEntryDate
+          ? new Date(summary.lastEntryDate).toLocaleDateString()
+          : 'N/A'}
       </TableCell>
     </TableRow>
   );
@@ -78,6 +82,44 @@ function PatientRow({ patient, onClick }: { patient: UserProfile, onClick: (id: 
 
 export function PatientTriageClient({ patients }: PatientTriageClientProps) {
   const router = useRouter();
+  const [summaries, setSummaries] = React.useState<SymptomSummary[] | null>(null);
+  const [loadingSummaries, setLoadingSummaries] = React.useState(false);
+
+  React.useEffect(() => {
+    const loadSummaries = async () => {
+      if (!patients || patients.length === 0) {
+        setSummaries([]);
+        return;
+      }
+
+      setLoadingSummaries(true);
+      try {
+        const res = await fetch('/api/symptom-tracking/staff-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientIds: patients.map((p) => p.id) }),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch symptom summaries');
+        }
+
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setSummaries(json.data as SymptomSummary[]);
+        } else {
+          setSummaries([]);
+        }
+      } catch (err) {
+        console.error('Error loading symptom summaries:', err);
+        setSummaries([]);
+      } finally {
+        setLoadingSummaries(false);
+      }
+    };
+
+    loadSummaries();
+  }, [patients]);
 
   const handleRowClick = (patientId: string) => {
     router.push(`/staff/patients/${patientId}`);
@@ -101,13 +143,18 @@ export function PatientTriageClient({ patients }: PatientTriageClientProps) {
           </TableHeader>
           <TableBody>
             {patients.length > 0 ? (
-                patients.map((patient) => (
-                    <PatientRow key={patient.id} patient={patient} onClick={handleRowClick} />
-                ))
+              patients.map((patient) => (
+                <PatientRow
+                  key={patient.id}
+                  patient={patient}
+                  summary={summaries?.find((s) => s.patientId === patient.id)}
+                  onClick={handleRowClick}
+                />
+              ))
             ) : (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center h-24">
-                        No patients assigned to you.
+                        {loadingSummaries ? 'Loading symptom data...' : 'No patients assigned to you.'}
                     </TableCell>
                 </TableRow>
             )}
@@ -117,6 +164,3 @@ export function PatientTriageClient({ patients }: PatientTriageClientProps) {
     </Card>
   );
 }
-
-// A tiny hook to get firestore instance inside the sub-component without prop drilling
-useCollection.useFirebase = useFirebase;

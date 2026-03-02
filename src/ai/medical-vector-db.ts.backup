@@ -1,0 +1,371 @@
+// 🧱 PHASE 1 — PERSISTENT VECTOR DATABASE
+// Real ChromaDB integration with Gemini embeddings + Persistent File Storage
+
+import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { huggingFaceEmbeddings } from './huggingface-embeddings';
+import { persistentStorage } from './persistent-storage';
+
+export interface ProtocolMetadata {
+  title: string;
+  source: string;
+  surgeryType: string;
+  department: string;
+  version?: string;
+  uploadDate: string;
+  lastUpdated: string;
+  evidenceLevel: 'low' | 'moderate' | 'high' | 'expert_opinion';
+  keywords: string[];
+}
+
+export interface SearchResult {
+  content: string;
+  metadata: ProtocolMetadata;
+  relevanceScore: number;
+  source: string;
+}
+
+export class MedicalVectorDB {
+  private client: ChromaClient;
+  private collection: any;
+  private genAI: GoogleGenerativeAI;
+  private initialized = false;
+  private usePersistentStorage = false;
+
+  constructor() {
+    // Connect to ChromaDB server with default settings
+    this.client = new ChromaClient({
+      path: "http://localhost:8000"
+    });
+
+    // Initialize Gemini for LLM (not embeddings)
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+    console.log('🧱 Medical Vector DB initialized with ChromaDB server + HuggingFace embeddings');
+  }
+
+  private async initialize() {
+    if (this.initialized) return;
+
+    try {
+      // Connect to ChromaDB server (default tenant should work)
+      this.collection = await this.client.getOrCreateCollection({
+        name: 'hospital_guidelines_hf' // New collection for HuggingFace embeddings
+      });
+      this.initialized = true;
+      console.log('✅ ChromaDB server connected successfully');
+      
+      // Test the connection by getting count
+      const count = await this.collection.count();
+      console.log(`📊 ChromaDB collection has ${count} documents`);
+      
+    } catch (error) {
+      console.error('❌ ChromaDB server connection failed, using persistent file storage:', error);
+      // Use persistent file storage instead of in-memory
+      this.usePersistentStorage = true;
+      this.initialized = true;
+      console.log('💾 Switched to persistent file storage');
+    }
+  }
+
+  // Generate embeddings using Hugging Face (100% free, local)
+  private async generateEmbedding(text: string): Promise<number[]> {
+    try {
+      console.log('🤖 Using HuggingFace embeddings (all-MiniLM-L6-v2)');
+      return await huggingFaceEmbeddings.generateEmbedding(text);
+    } catch (error) {
+      console.error('❌ Failed to generate HuggingFace embedding:', error);
+      // Fallback to simple hash-based embedding
+      return this.generateFallbackEmbedding(text);
+    }
+  }
+
+  // Fallback embedding method (384 dimensions to match HuggingFace)
+  private generateFallbackEmbedding(text: string): number[] {
+    const embedding = new Array(384).fill(0); // HuggingFace embedding dimension
+    for (let i = 0; i < text.length; i++) {
+      embedding[i % 384] = text.charCodeAt(i) / 255;
+    }
+    return embedding;
+  }
+
+  // Staff uploads hospital protocols
+  async addDocument(content: string, metadata: ProtocolMetadata): Promise<string> {
+    await this.initialize();
+
+    const id = `protocol-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      // Try ChromaDB first
+      if (this.collection && !this.usePersistentStorage) {
+        const embedding = await this.generateEmbedding(content);
+        
+        await this.collection.add({
+          ids: [id],
+          documents: [content],
+          embeddings: [embedding],
+          metadatas: [{
+            ...metadata,
+            id,
+            uploadDate: metadata.uploadDate || new Date().toISOString(),
+            lastUpdated: metadata.lastUpdated || new Date().toISOString()
+          }]
+        });
+        
+        console.log(`🏥 Protocol stored in ChromaDB: ${metadata.title} (${content.length} chars)`);
+      } else {
+        // Use persistent file storage
+        await persistentStorage.addDocument(id, content, metadata);
+        console.log(`💾 Protocol stored in persistent file storage: ${metadata.title} (${content.length} chars)`);
+      }
+      
+      return id;
+    } catch (error) {
+      console.error('❌ Failed to store protocol:', error);
+      
+      // Fallback to persistent storage
+      try {
+        await persistentStorage.addDocument(id, content, metadata);
+        console.log(`💾 Fallback: Protocol stored in persistent file storage: ${metadata.title}`);
+        return id;
+      } catch (fallbackError) {
+        console.error('❌ Even fallback storage failed:', fallbackError);
+        throw new Error('Failed to store protocol in any storage system');
+      }
+    }
+  }
+
+  // Get all documents for management
+  async getAllDocuments(): Promise<SearchResult[]> {
+    await this.initialize();
+
+    try {
+      if (this.collection && !this.usePersistentStorage) {
+        // Get all documents from ChromaDB
+        const results = await this.collection.get({
+          include: ['documents', 'metadatas']
+        });
+
+        if (!results.documents || results.documents.length === 0) {
+          return [];
+        }
+
+        return results.documents.map((doc: string, index: number) => {
+          const metadata = results.metadatas?.[index] || {};
+
+          return {
+            content: doc,
+            metadata: metadata as ProtocolMetadata,
+            relevanceScore: 1.0,
+            source: (metadata as ProtocolMetadata).title || 'Unknown Protocol'
+          };
+        });
+      } else {
+        // Get all documents from persistent file storage
+        return await persistentStorage.getAllDocuments();
+      }
+    } catch (error) {
+      console.error('❌ Failed to get all documents:', error);
+      // Fallback to persistent storage
+      return await persistentStorage.getAllDocuments();
+    }
+  }
+
+  // System finds relevant protocols (semantic search)
+  async search(query: string, topK: number = 5): Promise<SearchResult[]> {
+    await this.initialize();
+
+    try {
+      if (this.collection) {
+        // Use ChromaDB search
+        const queryEmbedding = await this.generateEmbedding(query);
+        
+        const results = await this.collection.query({
+          queryEmbeddings: [queryEmbedding],
+          nResults: topK,
+          include: ['documents', 'metadatas', 'distances']
+        });
+
+        if (!results.documents[0] || results.documents[0].length === 0) {
+          return [];
+        }
+
+        return results.documents[0].map((doc: string, index: number) => {
+          const metadata = results.metadatas[0]?.[index] || {};
+          const distance = results.distances[0]?.[index] || 1;
+
+          return {
+            content: doc,
+            metadata: metadata as ProtocolMetadata,
+            relevanceScore: 1 - distance,
+            source: metadata.title || 'Unknown Protocol'
+          };
+        });
+      } else {
+        // Fallback keyword search
+        return this.fallbackSearch(query, topK);
+      }
+    } catch (error) {
+      console.error('❌ Search failed:', error);
+      return this.fallbackSearch(query, topK);
+    }
+  }
+
+  // Fallback search method
+  private fallbackSearch(query: string, topK: number): SearchResult[] {
+    const results: SearchResult[] = [];
+    const queryWords = query.toLowerCase().split(' ');
+
+    for (const [id, doc] of this.documents.entries()) {
+      const content = doc.content.toLowerCase();
+      const title = doc.metadata.title.toLowerCase();
+      
+      let score = 0;
+      queryWords.forEach(word => {
+        if (content.includes(word)) score += 0.3;
+        if (title.includes(word)) score += 0.5;
+      });
+
+      if (score > 0) {
+        results.push({
+          content: doc.content.substring(0, 300) + '...',
+          metadata: doc.metadata,
+          relevanceScore: Math.min(score / queryWords.length, 1),
+          source: doc.metadata.title
+        });
+      }
+    }
+
+    return results
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, topK);
+  }
+
+  // Get database statistics
+  async getStats() {
+    await this.initialize();
+
+    try {
+      let count = this.documents.size;
+      
+      if (this.collection) {
+        count = await this.collection.count();
+      }
+      
+      return {
+        totalDocuments: count,
+        totalEmbeddings: count,
+        storageType: this.collection ? 'ChromaDB Server' : 'Fallback Storage',
+        lastUpdated: new Date().toISOString(),
+        embeddingModel: 'HuggingFace all-MiniLM-L6-v2 (384-dim)',
+        dimensions: 384
+      };
+    } catch (error) {
+      console.error('❌ Failed to get stats:', error);
+      return {
+        totalDocuments: this.documents.size,
+        totalEmbeddings: this.documents.size,
+        storageType: 'Fallback Storage',
+        lastUpdated: new Date().toISOString(),
+        embeddingModel: 'HuggingFace all-MiniLM-L6-v2 (384-dim)',
+        dimensions: 384,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Delete a protocol by ID
+  async deleteDocument(id: string): Promise<boolean> {
+    await this.initialize();
+
+    try {
+      if (this.collection) {
+        await this.collection.delete({
+          ids: [id]
+        });
+      } else {
+        this.documents.delete(id);
+      }
+      
+      console.log(`🗑️ Protocol deleted: ${id}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to delete protocol:', error);
+      return false;
+    }
+  }
+
+  // Update existing protocol
+  async updateDocument(id: string, content: string, metadata: ProtocolMetadata): Promise<boolean> {
+    await this.initialize();
+
+    try {
+      if (this.collection) {
+        const embedding = await this.generateEmbedding(content);
+        
+        await this.collection.update({
+          ids: [id],
+          documents: [content],
+          embeddings: [embedding],
+          metadatas: [{
+            ...metadata,
+            id,
+            lastUpdated: new Date().toISOString()
+          }]
+        });
+      } else {
+        this.documents.set(id, {
+          content,
+          metadata: { ...metadata, id, lastUpdated: new Date().toISOString() }
+        });
+      }
+      
+      console.log(`🔄 Protocol updated: ${metadata.title}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to update protocol:', error);
+      return false;
+    }
+  }
+
+  // Get document by ID
+  async getDocument(id: string): Promise<SearchResult | null> {
+    await this.initialize();
+
+    try {
+      if (this.collection) {
+        const results = await this.collection.get({
+          ids: [id],
+          include: ['documents', 'metadatas']
+        });
+
+        if (!results.documents[0]) {
+          return null;
+        }
+
+        return {
+          content: results.documents[0] as string,
+          metadata: results.metadatas[0] as ProtocolMetadata,
+          relevanceScore: 1.0,
+          source: (results.metadatas[0] as ProtocolMetadata).title || 'Unknown'
+        };
+      } else {
+        const doc = this.documents.get(id);
+        if (!doc) return null;
+
+        return {
+          content: doc.content,
+          metadata: doc.metadata,
+          relevanceScore: 1.0,
+          source: doc.metadata.title
+        };
+      }
+    } catch (error) {
+      console.error('❌ Failed to get document:', error);
+      return null;
+    }
+  }
+}
+
+// Singleton instance for the entire application
+export const medicalVectorDB = new MedicalVectorDB();

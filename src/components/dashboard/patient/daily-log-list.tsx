@@ -29,16 +29,19 @@ export function DailyLogList({ logs }: DailyLogListProps) {
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               <span>Log for {log.timestamp ? format(log.timestamp.toDate(), 'MMMM d, yyyy') : 'Date unknown'}</span>
-              <span
-                className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
-                  log.acknowledged
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
-              >
-                {log.acknowledged ? <CheckCircle size={14} /> : <Clock size={14} />}
-                {log.acknowledged ? 'Reviewed' : 'Needs Review'}
-              </span>
+              {(() => {
+                const isReviewed = Boolean(log.acknowledged || log.doctorsRemarks);
+                return (
+                  <span
+                    className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
+                      isReviewed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {isReviewed ? <CheckCircle size={14} /> : <Clock size={14} />}
+                    {isReviewed ? 'Reviewed' : 'Needs Review'}
+                  </span>
+                );
+              })()}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

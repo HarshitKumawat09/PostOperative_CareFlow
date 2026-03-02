@@ -1,0 +1,21 @@
+{
+  "id": "protocol-1772289046705-e30k9bweo",
+  "content": "Test protocol for persistent storage",
+  "metadata": {
+    "title": "Test Protocol",
+    "source": "Test",
+    "surgeryType": "knee_replacement",
+    "department": "Orthopedics",
+    "version": "1.0",
+    "uploadDate": "2026-02-28T14:30:43.564Z",
+    "lastUpdated": "2026-02-28T14:30:43.570Z",
+    "evidenceLevel": "moderate",
+    "keywords": [
+      "test",
+      "protocol"
+    ],
+    "id": "protocol-1772289046705-e30k9bweo"
+  },
+  "createdAt": "2026-02-28T14:30:46.706Z",
+  "updatedAt": "2026-02-28T14:30:46.706Z"
+}

@@ -1,0 +1,15 @@
+{
+  "patientId": "0libMfxss6fpJhyk66GwVOugu732",
+  "enabled": true,
+  "channels": [
+    "sms",
+    "whatsapp"
+  ],
+  "reminderTimes": [
+    "09:00"
+  ],
+  "timezone": "Asia/Kolkata",
+  "language": "en",
+  "remindIfNoLogToday": true,
+  "updatedAt": "2026-03-02T02:45:00.420Z"
+}

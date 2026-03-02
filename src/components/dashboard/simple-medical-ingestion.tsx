@@ -129,9 +129,10 @@ export default function SimpleMedicalIngestion() {
     }));
   };
 
-  // Initialize database stats from API
+  // Initialize database stats and documents from API
   React.useEffect(() => {
     loadDatabaseStats();
+    loadExistingDocuments();
   }, []);
 
   // Load database stats from API
@@ -141,9 +142,36 @@ export default function SimpleMedicalIngestion() {
       const data = await response.json();
       if (data.success) {
         setDbStats(data.stats);
+        console.log('📊 Database stats loaded:', data.stats);
       }
     } catch (error) {
       console.error('Failed to load database stats:', error);
+    }
+  };
+
+  // Load existing documents from database
+  const loadExistingDocuments = async () => {
+    try {
+      const response = await fetch('/api/documents');
+      const data = await response.json();
+      if (data.success) {
+        const formattedDocs = data.documents.map((doc: any) => ({
+          id: doc.metadata.id || `doc-${Date.now()}`,
+          title: doc.metadata.title || 'Untitled',
+          content: doc.content || '',
+          source: doc.metadata.source || 'Unknown',
+          documentType: doc.metadata.documentType || 'guideline',
+          surgeryTypes: doc.metadata.surgeryTypes || [],
+          keywords: doc.metadata.keywords || [],
+          status: 'completed' as const,
+          chunks: 1,
+          uploadedAt: new Date(doc.metadata.uploadedAt || Date.now())
+        }));
+        setDocuments(formattedDocs);
+        console.log(`📋 Loaded ${formattedDocs.length} existing documents`);
+      }
+    } catch (error) {
+      console.error('Failed to load existing documents:', error);
     }
   };
 
@@ -229,6 +257,9 @@ export default function SimpleMedicalIngestion() {
       setProgress(100);
       setStatus('success');
       setStatusMessage(`✅ Medical guidelines ingested successfully! Stored ${result.chunkCount} chunks in ChromaDB.`);
+      
+      // Reload documents from database
+      await loadExistingDocuments();
       
       // Reset form
       setFormData({

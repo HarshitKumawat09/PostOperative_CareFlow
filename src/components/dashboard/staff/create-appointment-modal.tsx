@@ -33,9 +33,10 @@ const appointmentSchema = z.object({
 interface CreateAppointmentModalProps {
     patient: UserProfile;
     staff: User;
+    trigger?: React.ReactNode;
 }
 
-export function CreateAppointmentModal({ patient, staff }: CreateAppointmentModalProps) {
+export function CreateAppointmentModal({ patient, staff, trigger }: CreateAppointmentModalProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -86,10 +87,12 @@ export function CreateAppointmentModal({ patient, staff }: CreateAppointmentModa
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        {trigger || (
+          <Button>
             <CalendarPlus className="mr-2 h-4 w-4" />
             Schedule Appointment
-        </Button>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

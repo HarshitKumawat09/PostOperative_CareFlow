@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -11,3 +11,4 @@ if (!admin.apps.length) {
 
 export const firestore = admin.firestore();
 export const storage = admin.storage();
+export const adminDb = admin.firestore();

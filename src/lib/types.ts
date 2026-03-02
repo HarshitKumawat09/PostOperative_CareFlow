@@ -1,5 +1,15 @@
 import { Timestamp } from "firebase/firestore";
 
+export interface AssignedDoctorSnapshot {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  specialization?: string;
+  contactNumber?: string;
+  profileImageUrl?: string;
+}
+
 export interface UserProfile {
   id: string;
   firstName: string;
@@ -9,9 +19,13 @@ export interface UserProfile {
   bio?: string;
   profileImageUrl?: string;
   doctorId?: string | null;
+  assignedDoctor?: AssignedDoctorSnapshot | null;
   activeChatRequestId?: string | null;
   age?: number;
   primaryCondition?: string;
+  surgeryType?: string;
+  postOpDay?: number;
+  surgeryDate?: string;
 }
 
 export interface Doctor {

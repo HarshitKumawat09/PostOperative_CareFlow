@@ -18,6 +18,13 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
@@ -47,19 +54,22 @@ export function Header() {
 
         {/* NAVIGATION LINKS (Hidden on mobile) */}
         <nav className="hidden md:flex items-center gap-8">
-          {["Features", "How It Works", "Testimonials"].map((item) => (
-            <Link
-              key={item}
-              href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-              className={`text-sm font-medium transition-colors hover:underline underline-offset-4 ${
-                isScrolled 
-                  ? "text-slate-600 hover:text-primary" 
-                  : "text-white/90 hover:text-white"
-              }`}
-            >
-              {item}
-            </Link>
-          ))}
+          {["Features", "How It Works", "Testimonials"].map((item) => {
+            const sectionId = item.toLowerCase().replace(/\s+/g, "-");
+            return (
+              <button
+                key={item}
+                onClick={() => scrollToSection(sectionId)}
+                className={`text-sm font-medium transition-colors hover:underline underline-offset-4 bg-transparent border-none cursor-pointer ${
+                  isScrolled 
+                    ? "text-slate-600 hover:text-primary" 
+                    : "text-white/90 hover:text-white"
+                }`}
+              >
+                {item}
+              </button>
+            );
+          })}
         </nav>
 
         {/* BUTTONS SECTION */}

@@ -34,7 +34,11 @@ const dailyLogSchema = z.object({
   additionalNotes: z.string().optional(),
 });
 
-export function DailyLogModal() {
+interface DailyLogModalProps {
+  triggerText?: React.ReactNode;
+}
+
+export function DailyLogModal({ triggerText }: DailyLogModalProps) {
   const [open, setOpen] = useState(false);
   const [painLevel, setPainLevel] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -125,10 +129,12 @@ export function DailyLogModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-full w-14 h-14 shadow-lg">
-          <Plus className="w-6 h-6" />
-          <span className="sr-only">Log Today's Progress</span>
-        </Button>
+        {triggerText || (
+          <Button className="rounded-full w-14 h-14 shadow-lg">
+            <Plus className="w-6 h-6" />
+            <span className="sr-only">Log Today's Progress</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

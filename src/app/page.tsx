@@ -1,8 +1,10 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/landing/header";
 import { Footer } from "@/components/landing/footer";
+import { Features } from "@/components/landing/features";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { Testimonials } from "@/components/landing/testimonials";
 import { Button } from "@/components/ui/button";
 import { 
   ClipboardCheck, 
@@ -10,11 +12,12 @@ import {
   TrendingUp, 
   HeartPulse, 
   Database, 
-  BrainCircuit, 
+  Brain, 
   FileText, 
   ArrowRight, 
   ShieldCheck,
-  PlayCircle
+  PlayCircle,
+  BrainCircuit
 } from "lucide-react";
 
 export default function Home() {
@@ -23,39 +26,63 @@ export default function Home() {
       <Header />
       
       <main className="flex-1">
-        {/* ================= HERO SECTION ================= */}
-        <section className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
-          {/* Background Image with Overlay */}
-          <div className="absolute inset-0 z-0">
+        {/* ================= HERO SECTION (Upgraded) ================= */}
+        <section className="relative w-full h-screen min-h-[650px] flex items-center justify-center overflow-hidden group">
+          
+          {/* 1. Background Image with Parallax-like feel */}
+          <div className="absolute inset-0 z-0 transform scale-105 group-hover:scale-100 transition-transform duration-[2000ms] ease-in-out">
             <Image
-              src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"
-              alt="Medical Recovery"
+              src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?q=80&w=2070&auto=format&fit=crop"
+              alt="Woman resting comfortably while CareFlow manages recovery"
               fill
-              className="object-cover object-center brightness-50" 
+              className="object-cover object-center"
               priority
             />
-            {/* Gradient Overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-black/40" />
           </div>
 
-          <div className="container relative z-10 px-4 md:px-6 text-center">
-            <h1 className="mx-auto max-w-4xl text-3xl font-bold tracking-tighter text-white sm:text-5xl xl:text-6xl/none mb-6 drop-shadow-md">
-              "Moving beyond basic health monitoring to provide intelligent, explainable, and predictive recovery support."
-            </h1>
-            <p className="mx-auto max-w-[700px] text-gray-200 md:text-xl mb-8 font-light">
-              Your intelligent post-operative partner. We use RAG and LLMs to explain risks, predict complications, and empower your recovery.
+          {/* 2. Advanced Overlay - Multi-layered for depth */}
+          {/* Layer A: Darkens the whole image slightly */}
+          <div className="absolute inset-0 bg-blue-950/30 mix-blend-multiply z-1" />
+          {/* Layer B: A strong gradient from bottom-left (blue) to top-right (transparent/dark) */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/80 via-black/40 to-black/10 z-2" />
+          {/* Layer C: Subtle radial gradient to focus attention on the center text */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/20 to-black/50 z-3" />
+
+
+          {/* 3. Centered Content with animation entry */}
+          <div className="container relative z-10 px-4 md:px-6 flex flex-col items-center text-center">
+            
+            {/* Optional "Kicker" text above headline */}
+            <p className="text-blue-200 font-semibold tracking-widest uppercase text-sm mb-6 animate-fade-in-down">
+              The New Standard in Post-Op Care
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white min-w-[160px]">
+
+            {/* Main Headline (Quote) */}
+            <h1 className="max-w-5xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl mb-8 drop-shadow-2xl leading-tight animate-fade-in-up delay-100">
+              “Moving beyond basic health monitoring to provide <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">intelligent, explainable, and predictive</span> recovery support.”
+            </h1>
+            
+            {/* Subheadline */}
+            <p className="max-w-2xl text-lg md:text-xl text-blue-50/90 mb-12 font-medium leading-relaxed animate-fade-in-up delay-200">
+              Your intelligent partner. We use RAG and AI to explain risks, predict complications, and empower your recovery from the comfort of home.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-5 w-full justify-center animate-fade-in-up delay-300">
+              {/* Primary Button with glow effect */}
+              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg px-8 h-14 rounded-full shadow-lg shadow-blue-500/25 transition-all hover:scale-105 hover:shadow-blue-400/40 min-w-[200px]">
                 <Link href="/login">Get Started</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="bg-transparent text-white border-white hover:bg-white/20 min-w-[160px] gap-2">
+              
+              {/* Secondary Button with glass effect */}
+              <Button asChild variant="outline" size="lg" className="bg-white/5 text-white border-2 border-white/30 hover:bg-white/10 hover:border-white text-lg px-8 h-14 rounded-full shadow-lg backdrop-blur-sm transition-all hover:scale-105 min-w-[200px] gap-3">
                 <Link href="#demo">
-                  <PlayCircle className="w-5 h-5" />
-                  Watch Demo Video
+                   <PlayCircle className="w-6 h-6" />
+                   Watch Demo
                 </Link>
               </Button>
             </div>
+
           </div>
         </section>
 
@@ -119,44 +146,63 @@ export default function Home() {
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
                 Comprehensive Care Tools
               </h2>
-            </div>
-            
-            {/* FIX 1: Added lg:grid-cols-4 to make it a single row on laptop */}
-            {/* FIX 2: Increased max-w to 6xl to give it breathing room */}
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
-              
-              <div className="flex flex-col items-center text-center space-y-4 p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
-                <ClipboardCheck className="w-12 h-12 text-primary" />
-                <div>
-                  <h3 className="text-xl font-bold">Daily Med Reminder</h3>
-                  <p className="text-muted-foreground">Never miss a dose. Smart scheduling ensures you stay on track.</p>
+              <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 max-w-6xl mx-auto">
+                
+                {/* Daily Med Reminder */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <ClipboardCheck className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">Daily Med Reminder</h3>
+                    <p className="text-muted-foreground">Never miss a dose. Smart scheduling ensures you stay on track.</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex flex-col items-center text-center space-y-4 p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
-                <MessageSquare className="w-12 h-12 text-primary" />
-                <div>
-                  <h3 className="text-xl font-bold">Direct Chat with Staff</h3>
-                  <p className="text-muted-foreground">Secure, HIPAA-compliant messaging to reach your care team.</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-center text-center space-y-4 p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
-                <TrendingUp className="w-12 h-12 text-primary" />
-                <div>
-                  <h3 className="text-xl font-bold">Daily Progression</h3>
-                  <p className="text-muted-foreground">Visualize your recovery journey with simple charts.</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-center text-center space-y-4 p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
-                <HeartPulse className="w-12 h-12 text-primary" />
-                <div>
-                  <h3 className="text-xl font-bold">Post Op Health Care</h3>
-                  <p className="text-muted-foreground">Access personalized, surgery-specific care plans.</p>
-                </div>
-              </div>
 
+                {/* Direct Chat with Staff */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <MessageSquare className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">Direct Chat with Staff</h3>
+                    <p className="text-muted-foreground">Secure, HIPAA-compliant messaging to reach your care team.</p>
+                  </div>
+                </div>
+
+                {/* AI-Powered Health Analysis */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <Brain className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">🤖 AI-Powered Health Analysis</h3>
+                    <p className="text-muted-foreground">Advanced risk assessment and predictive insights for better outcomes.</p>
+                  </div>
+                </div>
+
+                {/* Proactive Alerts */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <ShieldCheck className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">Proactive Alerts</h3>
+                    <p className="text-muted-foreground">Early complication detection and smart notifications for medical staff.</p>
+                  </div>
+                </div>
+
+                {/* Recovery Progress Tracking */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <TrendingUp className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">Recovery Progress Tracking</h3>
+                    <p className="text-muted-foreground">Visualize your healing journey with intelligent progress charts.</p>
+                  </div>
+                </div>
+
+                {/* Gemini AI Assistant */}
+                <div className="flex flex-col items-center text-center p-4 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300">
+                  <Brain className="w-12 h-12 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-bold">🤖 Gemini AI Assistant</h3>
+                    <p className="text-muted-foreground">Test AI-powered medical intelligence and explanations.</p>
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         </section>
@@ -230,6 +276,11 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ================= NEW LANDING SECTIONS ================= */}
+        <Features />
+        <HowItWorks />
+        <Testimonials />
 
         {/* ================= FINAL CTA ================= */}
         <section className="w-full py-20 bg-primary text-primary-foreground">

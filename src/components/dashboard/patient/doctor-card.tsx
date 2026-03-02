@@ -1,6 +1,6 @@
 'use client';
 
-import type { Doctor } from '@/lib/types';
+import type { AssignedDoctorSnapshot, Doctor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Accordion,
@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface DoctorCardProps {
-  doctor?: Doctor | null;
+  doctor?: Doctor | AssignedDoctorSnapshot | null;
 }
 
 export function DoctorCard({ doctor }: DoctorCardProps) {
@@ -76,13 +76,17 @@ export function DoctorCard({ doctor }: DoctorCardProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-4 space-y-2">
-              <p className="text-muted-foreground">{doctor.specialization}</p>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <a href={`tel:${doctor.contactNumber}`} className="text-primary hover:underline">
-                  {doctor.contactNumber}
-                </a>
-              </div>
+              {doctor.specialization ? (
+                <p className="text-muted-foreground">{doctor.specialization}</p>
+              ) : null}
+              {doctor.contactNumber ? (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <a href={`tel:${doctor.contactNumber}`} className="text-primary hover:underline">
+                    {doctor.contactNumber}
+                  </a>
+                </div>
+              ) : null}
             </AccordionContent>
           </AccordionItem>
         </Accordion>

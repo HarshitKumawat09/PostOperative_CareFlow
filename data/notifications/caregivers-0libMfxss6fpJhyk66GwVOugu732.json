@@ -1,0 +1,16 @@
+[
+  {
+    "id": "caregiver-1772419654786-dq2kk4c",
+    "patientId": "0libMfxss6fpJhyk66GwVOugu732",
+    "name": "Avi",
+    "phoneE164": "+918757995828",
+    "channels": [
+      "whatsapp",
+      "sms"
+    ],
+    "receiveWeeklySummary": true,
+    "receiveCriticalAlerts": true,
+    "createdAt": "2026-03-02T02:47:34.786Z",
+    "updatedAt": "2026-03-02T02:47:34.786Z"
+  }
+]
