@@ -2,7 +2,7 @@
 // This tests the core services without UI
 
 // Mock environment variables for testing
-process.env.NEXT_PUBLIC_GEMINI_API_KEY = 'AIzaSyBkcuZDboSwDhfAJkByD4qhHTwXOvnjZY0';
+process.env.NEXT_PUBLIC_GEMINI_API_KEY = 'GEMINI';
 process.env.NODE_ENV = 'development';
 
 // Simple test without TypeScript compilation
