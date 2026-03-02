@@ -2,7 +2,7 @@
 // Run with: node test-vector-db.js
 
 // Mock Next.js environment variables
-process.env.NEXT_PUBLIC_GEMINI_API_KEY = 'AIzaSyBkcuZDboSwDhfAJkByD4qhHTwXOvnjZY0';
+process.env.NEXT_PUBLIC_GEMINI_API_KEY = 'GEMINI_API_KEY';
 
 // Import required modules
 const { SimpleGeminiService } = require('./src/ai/simple-gemini-service.ts');
