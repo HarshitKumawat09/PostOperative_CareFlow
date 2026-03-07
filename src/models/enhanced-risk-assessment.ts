@@ -1,5 +1,4 @@
-// Enhanced Risk Assessment with Vector Database Integration
-// Extends our existing risk assessment with AI-powered insights
+
 
 import { RiskAssessmentEngine, RiskAssessmentResult } from './risk-assessment';
 import { Patient } from './patient';

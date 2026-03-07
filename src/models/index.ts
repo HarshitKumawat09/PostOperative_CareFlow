@@ -1,7 +1,4 @@
-// Main exports for CareFlow OOP Models
-// This file provides a clean import interface for all OOP classes
 
-// Base classes and enums
 export {
   MedicalEntity,
   validatePainLevel,

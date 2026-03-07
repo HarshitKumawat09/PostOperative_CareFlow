@@ -1,5 +1,3 @@
-// Base OOP Classes for CareFlow Medical System
-// This is the foundation of our medical entity hierarchy
 
 export enum SurgeryType {
   KNEE_REPLACEMENT = 'KNEE_REPLACEMENT',

@@ -1,5 +1,4 @@
-// Enhanced Risk Assessment with Simple Gemini Service Integration
-// Real implementation using Gemini API for AI-powered insights
+
 
 import { RiskAssessmentEngine, RiskAssessmentResult } from './risk-assessment';
 import { Patient } from './patient';
