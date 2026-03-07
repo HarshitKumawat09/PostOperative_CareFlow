@@ -1,4 +1,3 @@
-// Check correct Gemini API version
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config({ path: '.env.local' });
 
@@ -9,7 +8,6 @@ async function checkAPIVersion() {
     const apiKey = process.env.GEMINI_API_KEY;
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Try v1 API
     console.log('\n📋 Trying v1 API...');
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
@@ -23,7 +21,6 @@ async function checkAPIVersion() {
       console.log('❌ v1 API failed:', v1Error.message);
     }
     
-    // Try v1beta API
     console.log('\n📋 Trying v1beta API...');
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);

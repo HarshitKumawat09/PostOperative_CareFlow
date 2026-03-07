@@ -54,7 +54,7 @@ export default function Home() {
             
             {/* Optional "Kicker" text above headline */}
             <p className="text-blue-200 font-semibold tracking-widest uppercase text-sm mb-6 animate-fade-in-down">
-              The New Standard in Post-Op Care
+              The New Standard in Post-Op Care.
             </p>
 
             {/* Main Headline (Quote) */}

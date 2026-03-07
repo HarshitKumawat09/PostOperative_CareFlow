@@ -1,4 +1,3 @@
-// Check available Gemini models
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config({ path: '.env.local' });
 
@@ -13,7 +12,6 @@ async function checkAvailableModels() {
   }
 
   try {
-    // List available models
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     const data = await response.json();
     
@@ -33,7 +31,6 @@ async function checkAvailableModels() {
       console.log('❌ No models found or error:', data);
     }
     
-    // Find models that support generateContent
     const generativeModels = data.models?.filter(model => 
       model.supportedGenerationMethods?.includes('generateContent')
     ) || [];
@@ -43,7 +40,6 @@ async function checkAvailableModels() {
       console.log(`  - ${model.name} (${model.displayName})`);
     });
     
-    // Recommend the best model for our use case
     const recommendedModel = generativeModels.find(model => 
       model.name.includes('flash') || model.name.includes('pro')
     ) || generativeModels[0];
@@ -58,7 +54,6 @@ async function checkAvailableModels() {
   }
 }
 
-// Test with a specific model
 async function testModel(modelName) {
   console.log(`\n🧪 Testing model: ${modelName}`);
   console.log('─'.repeat(40));
@@ -81,11 +76,9 @@ async function testModel(modelName) {
   }
 }
 
-// Run the checks
 if (require.main === module) {
   checkAvailableModels()
     .then(() => {
-      // Test common models
       const commonModels = [
         'gemini-1.5-flash',
         'gemini-1.5-pro',
