@@ -52,8 +52,16 @@ export default function PatientDashboardPage() {
   
   const latestRemark = latestRemarkLog?.doctorsRemarks;
 
-  // Check if logged today
-  const hasLoggedToday = recentLogs && recentLogs.length > 0 && isSameDay(recentLogs[0].timestamp.toDate(), now);
+  // Check if logged today (temporarily disabled for testing)
+  const hasLoggedToday = false; // recentLogs && recentLogs.length > 0 && isSameDay(recentLogs[0].timestamp.toDate(), now);
+  
+  // Debug: Check the values
+  console.log('Debug - Patient Dashboard:', {
+    recentLogs: recentLogs?.length || 0,
+    hasLoggedToday,
+    latestLogDate: recentLogs?.[0]?.timestamp?.toDate?.(),
+    today: now
+  });
 
   // --- Loading State ---
   if (isLoading) {
@@ -106,7 +114,7 @@ export default function PatientDashboardPage() {
                  <p className="text-slate-700 max-w-md">How are you feeling right now? Logging your symptoms daily is crucial for your recovery.</p>
                  {/* We wrap the modal trigger button to style it prominently */}
                  <div className="[&>button]:bg-primary [&>button]:hover:bg-primary/90 [&>button]:text-lg [&>button]:py-6 [&>button]:px-8 [&>button]:rounded-full [&>button]:shadow-md">
-                   <DailyLogModal triggerText={<><Activity className="mr-2 h-5 w-5"/> Log My Symptoms Now</>} />
+                   <DailyLogModal triggerText={<span>Log My Symptoms Now</span>} />
                  </div>
                </div>
             )}

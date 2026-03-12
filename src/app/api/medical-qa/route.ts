@@ -2,11 +2,61 @@
 // LLM answers using ONLY retrieved medical protocols + RECOVERY INTELLIGENCE
 
 import { NextRequest, NextResponse } from 'next/server';
-import { medicalVectorDB } from '@/ai/medical-vector-db';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { recoveryIntelligenceService } from '@/ai/recovery-intelligence';
+import { clinicalKnowledge } from '@/lib/clinical-knowledge';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+// Search function using clean clinical knowledge base
+function searchClinicalKnowledge(question: string, limit: number = 3) {
+  const questionLower = question.toLowerCase();
+  
+  // Score knowledge items based on keyword matching
+  const scored = clinicalKnowledge
+    .map(item => {
+      let score = 0;
+      const contentLower = item.content.toLowerCase();
+      const titleLower = item.title.toLowerCase();
+      
+      // Count matching keywords
+      item.tags.forEach(tag => {
+        if (questionLower.includes(tag.toLowerCase())) {
+          score += 2; // Tags are worth more
+        }
+      });
+      
+      // Check content matches
+      if (contentLower.includes('fever') && questionLower.includes('fever')) score += 3;
+      if (contentLower.includes('pain') && questionLower.includes('pain')) score += 3;
+      if (contentLower.includes('infection') && questionLower.includes('infection')) score += 3;
+      if (contentLower.includes('knee') && questionLower.includes('knee')) score += 2;
+      if (contentLower.includes('wound') && questionLower.includes('wound')) score += 2;
+      
+      return { item, score };
+    })
+    .filter(result => result.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+  
+  // Convert to expected format
+  return scored.map(result => ({
+    content: result.item.content,
+    metadata: {
+      title: result.item.title,
+      source: 'Hospital Clinical Guidelines',
+      surgeryType: 'general',
+      department: 'Surgery',
+      evidenceLevel: 'high' as const,
+      keywords: result.item.tags,
+      version: '1.0',
+      uploadDate: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    },
+    relevanceScore: Math.min(result.score / 5, 1.0), // Normalize to 0-1 (max score ~5)
+    source: 'clinical-knowledge-base'
+  }));
+}
 
 // Helper function to extract surgery context from question and patient context
 function extractSurgeryContext(question: string, patientContext?: string): {
@@ -135,8 +185,16 @@ export async function POST(request: NextRequest) {
     // Step 1: Extract surgery type and post-op day from context/question
     const { surgeryType, postOpDay, detectedContext } = extractSurgeryContext(question, patientContext);
 
-    // Step 2: Find relevant hospital protocols
-    const relevantProtocols = await medicalVectorDB.search(question.trim(), 3);
+    // Step 2: Find relevant hospital protocols using clean knowledge base
+    const relevantProtocols = searchClinicalKnowledge(question.trim(), 3);
+
+    // DEBUG: Log what we're retrieving
+    console.log('=== PATIENT Q&A DEBUG INFO ===');
+    console.log('Question:', question.trim());
+    console.log('Retrieved protocols:', relevantProtocols.length);
+    console.log('Protocol titles:', relevantProtocols.map(p => p.metadata.title));
+    console.log('Content preview:', relevantProtocols.map(p => p.content.substring(0, 200) + '...'));
+    console.log('============================');
 
     if (relevantProtocols.length === 0) {
       return NextResponse.json({
@@ -146,6 +204,9 @@ export async function POST(request: NextRequest) {
         protocolsUsed: 0,
         riskLevel: "Unknown",
         patientContext: patientContext ? 'Provided' : 'Not provided',
+        whenToContactDoctor: "Please consult your healthcare provider for this specific question.",
+        searchQuery: question,
+        responseTime: new Date().toLocaleTimeString(),
         recoveryIntelligence: null
       });
     }
@@ -237,11 +298,19 @@ ANSWER:`;
       return NextResponse.json({
         success: true,
         answer: `Based on our hospital protocols and recovery intelligence, I found relevant information about your question.${recoverySummary}\n\nHere's what the guidelines say:\n\n${protocolContents.substring(0, 500)}...\n\nHowever, I'm currently unable to process a detailed analysis. Please consult your healthcare provider for specific guidance.`,
-        sources: relevantProtocols.map(p => p.metadata.title),
+        sources: relevantProtocols.map(p => ({
+          protocolTitle: p.metadata.title,
+          department: p.metadata.department,
+          surgeryType: p.metadata.surgeryType,
+          relevanceScore: p.relevanceScore || 0.8, // Ensure valid number
+          excerpt: p.content.substring(0, 150) + '...'
+        })),
         protocolsUsed: relevantProtocols.length,
         riskLevel: clinicalRiskAssessment.riskLevel,
         patientContext: patientContext ? 'Provided' : 'Not provided',
         whenToContactDoctor: "Please contact your healthcare provider for specific medical guidance.",
+        searchQuery: question,
+        responseTime: new Date().toLocaleTimeString(),
         recoveryIntelligence: recoveryIntelligence ? {
           surgeryType: recoveryIntelligence.surgeryType,
           currentPhase: currentPhase?.phase || 'Unknown',
@@ -280,7 +349,7 @@ ANSWER:`;
         protocolTitle: protocol.metadata.title,
         department: protocol.metadata.department || 'General',
         surgeryType: protocol.metadata.surgeryType || 'General',
-        relevanceScore: protocol.relevanceScore || 0.5,
+        relevanceScore: protocol.relevanceScore || 0.8, // Ensure valid number
         excerpt: protocol.content.substring(0, 200) + '...'
       })),
       protocolsUsed: relevantProtocols.length,

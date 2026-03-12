@@ -19,9 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus } from 'lucide-react';
+import { Plus, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getUploadUrl } from '@/app/actions';
+import { saveImageLocally } from '@/app/actions';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 
@@ -53,24 +53,16 @@ export function DailyLogModal({ triggerText }: DailyLogModalProps) {
   });
   
   async function uploadFile(file: File, patientId: string) {
-      const {url, fields, publicUrl} = await getUploadUrl({name: file.name, type: file.type}, patientId);
-      
-      const formData = new FormData();
-      Object.entries(fields).forEach(([key, value]) => {
-        formData.append(key, value as string);
-      });
-      formData.append('file', file);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
+      try {
+        // Save image locally using our new function
+        const imagePath = await saveImageLocally(file);
+        console.log('✅ Image saved locally:', imagePath);
+        return imagePath;
+      } catch (error) {
+        console.warn('Image upload failed, using placeholder:', error);
+        // Return placeholder image if upload fails
+        return "https://picsum.photos/seed/placeholder/400/300";
       }
-      
-      return publicUrl;
   }
 
   async function onSubmit(values: z.infer<typeof dailyLogSchema>) {
@@ -91,6 +83,19 @@ export function DailyLogModal({ triggerText }: DailyLogModalProps) {
 
         if (imageFile) {
             imageUrl = await uploadFile(imageFile, user.uid);
+            if (imageUrl === "https://picsum.photos/seed/placeholder/400/300") {
+                // Show a friendly message that image upload failed but log was saved
+                toast({
+                    title: 'Log Submitted!',
+                    description: "Your log was saved successfully. Image upload failed - using placeholder image.",
+                });
+            } else {
+                // Image uploaded successfully
+                toast({
+                    title: 'Log Submitted!',
+                    description: "Your log and image were saved successfully!",
+                });
+            }
         }
 
         const logData = {
@@ -106,10 +111,13 @@ export function DailyLogModal({ triggerText }: DailyLogModalProps) {
 
         await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/daily_logs`), logData);
 
-        toast({
-            title: 'Success!',
-            description: "Log submitted successfully!",
-        });
+        // Only show success toast if we haven't already shown a message
+        if (!imageFile) {
+            toast({
+                title: 'Success!',
+                description: "Log submitted successfully!",
+            });
+        }
         setOpen(false);
         form.reset();
         setPainLevel(5);
@@ -129,7 +137,12 @@ export function DailyLogModal({ triggerText }: DailyLogModalProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {triggerText || (
+        {triggerText ? (
+          <Button className="rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 transition-all hover:scale-105 hover:shadow-xl">
+            <Activity className="w-6 h-6 mr-3" />
+            {triggerText}
+          </Button>
+        ) : (
           <Button className="rounded-full w-14 h-14 shadow-lg">
             <Plus className="w-6 h-6" />
             <span className="sr-only">Log Today's Progress</span>

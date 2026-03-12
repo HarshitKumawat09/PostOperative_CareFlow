@@ -45,6 +45,14 @@ export async function askGuidelineAssistant(
     .map(k => `[${k.title}]\n${k.content}`)
     .join('\n\n');
 
+  // DEBUG: Log what we're retrieving
+  console.log('=== RAG DEBUG INFO ===');
+  console.log('Question:', input.question);
+  console.log('Retrieved knowledge items:', knowledge.length);
+  console.log('Knowledge titles:', knowledge.map(k => k.title));
+  console.log('Knowledge text preview:', knowledgeText.substring(0, 500) + '...');
+  console.log('===================');
+
   const prompt = `You are a cautious clinical assistant helping staff interpret post-operative patient logs.
 
 First, carefully read the patient summary.

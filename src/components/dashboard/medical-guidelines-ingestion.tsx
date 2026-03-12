@@ -37,6 +37,7 @@ import {
 
 import { SurgeryType, RiskLevel } from '../../models/base';
 import { MedicalDocumentType } from '../../models/vector-db';
+import { extractTextFromFile, isPDFFile, isTextFile } from '../../lib/pdf-parser';
 
 // Types for ingestion system
 interface IngestedDocument {
@@ -111,24 +112,35 @@ export default function MedicalGuidelinesIngestion() {
     ]);
   }, []);
 
-  // Handle file upload
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file upload with proper PDF parsing
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setDocumentMetadata(prev => ({
-        ...prev,
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        source: file.name
-      }));
+    if (!file) return;
+
+    setSelectedFile(file);
+    setDocumentMetadata(prev => ({
+      ...prev,
+      title: file.name.replace(/\.[^/.]+$/, ""),
+      source: file.name
+    }));
+
+    try {
+      // Show processing status
+      setStatus('processing');
+      setStatusMessage('📄 Extracting text from document...');
       
-      // Read file content
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setTextContent(content);
-      };
-      reader.readAsText(file);
+      // Extract text using proper PDF parser
+      const extractedText = await extractTextFromFile(file);
+      
+      setTextContent(extractedText);
+      setStatus('success');
+      setStatusMessage(`✅ Successfully extracted ${extractedText.length} characters from ${file.name}`);
+      
+    } catch (error) {
+      console.error('File processing error:', error);
+      setStatus('error');
+      setStatusMessage(`❌ Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTextContent('');
     }
   }, []);
 

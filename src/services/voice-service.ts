@@ -33,7 +33,7 @@ export class VoiceService {
       // Check if browser supports speech synthesis
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         this.synth = window.speechSynthesis;
-        this.isSupported = true;
+        this.isSupported = true; // Force enable if API exists
         
         // Load voices immediately if available
         await this.loadVoices();
@@ -68,18 +68,27 @@ export class VoiceService {
       const voices = this.synth.getVoices();
       if (voices.length > 0) {
         this.voices = voices;
+        console.log(`🎤 Loaded ${voices.length} voices immediately`);
         return;
       }
       
       // Wait for voices to load (some browsers need time)
       return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        
         const checkVoices = () => {
           const voices = this.synth!.getVoices();
           if (voices.length > 0) {
             this.voices = voices;
+            console.log(`🎤 Loaded ${voices.length} voices after ${attempts * 100}ms`);
             resolve();
-          } else {
+          } else if (attempts < maxAttempts) {
+            attempts++;
             setTimeout(checkVoices, 100);
+          } else {
+            console.warn('⚠️ No voices loaded, but continuing anyway');
+            resolve(); // Continue even if no voices loaded
           }
         };
         checkVoices();
@@ -163,12 +172,10 @@ export class VoiceService {
 
       utterance.onerror = (event) => {
         const errorMessage = this.getSpeechErrorMessage(event.error);
-        console.error('❌ Speech error:', errorMessage);
+        console.warn('🔊 Voice synthesis unavailable:', errorMessage);
         
-        // Fallback for common errors
-        if (event.error === 'network' || event.error === 'synthesis-unavailable') {
-          alert(`🔊 Voice synthesis unavailable. Text: ${text}`);
-        }
+        // Don't show alerts for voice errors - just log silently
+        // Voice is optional feature, shouldn't interrupt user experience
       };
 
       utterance.onpause = () => {

@@ -57,7 +57,10 @@ export default function HospitalQA() {
     const checkVoiceSupport = async () => {
       try {
         await voiceService.initialize();
-        setVoiceSupported(voiceService.isVoiceSupported());
+        // Always enable voice if speechSynthesis API exists
+        const hasSpeechAPI = typeof window !== 'undefined' && 'speechSynthesis' in window;
+        setVoiceSupported(hasSpeechAPI);
+        console.log('🔊 Voice support checked:', hasSpeechAPI);
       } catch (error) {
         console.error('Voice service initialization failed:', error);
         setVoiceSupported(false);
@@ -135,19 +138,15 @@ export default function HospitalQA() {
       const textToSpeak = translatedAnswer || response?.answer || '';
       if (textToSpeak) {
         try {
-          // Check if voice is supported
-          if (!voiceService.isVoiceSupported()) {
-            alert('🔊 Voice synthesis not supported in this browser. Text will be displayed instead.');
-            return;
-          }
-          
+          // Try to speak regardless of voice service check
           await voiceService.speak(textToSpeak, { 
             language: selectedLanguage === 'en' ? 'en-US' : `${selectedLanguage}-IN` 
           });
           setIsSpeaking(true);
         } catch (error) {
           console.error('Speech error:', error);
-          alert('🔊 Voice synthesis failed. Please read the text instead.');
+          // Don't show alert, just log it
+          console.warn('🔊 Voice synthesis not available, please read the text instead.');
           setIsSpeaking(false);
         }
       }
@@ -279,9 +278,9 @@ export default function HospitalQA() {
                   variant="outline"
                   size="sm"
                   onClick={toggleSpeech}
-                  disabled={!translatedAnswer || !voiceSupported}
+                  disabled={!translatedAnswer}
                   className="flex items-center gap-1"
-                  title={voiceSupported ? "Click to speak the answer" : "Voice not supported in this browser"}
+                  title="Click to speak the answer"
                 >
                   {isSpeaking ? (
                     <>
