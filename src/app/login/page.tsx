@@ -15,9 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // The login form handles role-based redirection upon successful login.
-    // If a user is already logged in and somehow lands here, the login form's
-    // own logic will eventually redirect them.
+    
   }, [user, isUserLoading, router]);
 
   if (isUserLoading) {

@@ -8,7 +8,6 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import { CheckCircle2, Activity, CalendarClock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Import existing components
 import { DoctorCard } from '@/components/dashboard/patient/doctor-card';
 import { AppointmentsCard } from '@/components/dashboard/patient/appointments-card';
 import { DoctorsRemarksCard } from '@/components/dashboard/patient/doctors-remarks-card';
