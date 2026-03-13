@@ -1,4 +1,3 @@
-// List available Gemini models
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config({ path: '.env.local' });
 

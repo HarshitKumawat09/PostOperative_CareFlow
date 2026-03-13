@@ -1,4 +1,3 @@
-// Comprehensive test for all Gemini AI endpoints
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config({ path: '.env.local' });
 
