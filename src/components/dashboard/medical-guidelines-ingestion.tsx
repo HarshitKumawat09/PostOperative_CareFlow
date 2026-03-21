@@ -35,7 +35,8 @@ import {
   Eye
 } from 'lucide-react';
 
-import { SurgeryType, RiskLevel } from '../../models/base';
+import { SurgeryType, SURGERY_TYPE_LABELS } from '@/lib/types';
+import { RiskLevel } from '../../models/base';
 import { MedicalDocumentType } from '../../models/vector-db';
 import { extractTextFromFile, isPDFFile, isTextFile } from '../../lib/pdf-parser';
 
@@ -478,7 +479,7 @@ export default function MedicalGuidelinesIngestion() {
                   {documentMetadata.surgeryTypes.map(surgeryType => (
                     <Badge key={surgeryType} variant="secondary" className="cursor-pointer"
                            onClick={() => removeSurgeryType(surgeryType)}>
-                      {surgeryType.replace('_', ' ')} ×
+                      {SURGERY_TYPE_LABELS[surgeryType] || surgeryType.replace('_', ' ')} ×
                     </Badge>
                   ))}
                 </div>
@@ -491,7 +492,7 @@ export default function MedicalGuidelinesIngestion() {
                       .filter(type => !documentMetadata.surgeryTypes.includes(type))
                       .map(type => (
                         <SelectItem key={type} value={type}>
-                          {type.replace('_', ' ')}
+                          {SURGERY_TYPE_LABELS[type] || type.replace('_', ' ')}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -722,7 +723,7 @@ export default function MedicalGuidelinesIngestion() {
                             <Badge variant="outline">{doc.documentType}</Badge>
                             {doc.surgeryTypes.map(surgeryType => (
                               <Badge key={surgeryType} variant="secondary">
-                                {surgeryType.replace('_', ' ')}
+                                {SURGERY_TYPE_LABELS[surgeryType] || surgeryType.replace('_', ' ')}
                               </Badge>
                             ))}
                             {doc.riskLevel && (

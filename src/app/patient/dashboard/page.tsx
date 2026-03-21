@@ -1,12 +1,15 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
-import type { DailyLog, Appointment } from '@/lib/types';
+import type { DailyLog, Appointment, SurgeryType } from '@/lib/types';
+import { SURGERY_TYPE_LABELS } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { CheckCircle2, Activity, CalendarClock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 
 import { DoctorCard } from '@/components/dashboard/patient/doctor-card';
 import { AppointmentsCard } from '@/components/dashboard/patient/appointments-card';
@@ -19,7 +22,26 @@ import SymptomDashboard from '@/components/patient/symptom-dashboard';
 // ProfileCard is no longer needed as it's integrated into the Hero section
 
 export default function PatientDashboardPage() {
+  const router = useRouter();
   const { firestore, user, userProfile: patient, isUserProfileLoading: patientLoading } = useFirebase();
+
+  useEffect(() => {
+    if (!patientLoading && patient && (!patient.surgeryType || !patient.surgeryDate)) {
+      router.push('/patient/onboarding');
+    }
+  }, [patientLoading, patient, router]);
+
+  // Show loading or redirecting state
+  if (patientLoading || (patient && (!patient.surgeryType || !patient.surgeryDate))) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const assignedDoctor = patient?.assignedDoctor || null;
 
@@ -97,9 +119,15 @@ export default function PatientDashboardPage() {
               Welcome back, {patient?.firstName || 'Patient'}.
             </h1>
             {patient?.postOpDay && (
-              <p className="text-lg text-slate-600 mb-4 flex items-center gap-2">
+              <p className="text-lg text-slate-600 mb-2 flex items-center gap-2">
                 <CalendarClock className="h-5 w-5 text-primary" />
                 You are on <span className="font-semibold text-primary">Day {patient.postOpDay}</span> of your recovery journey.
+              </p>
+            )}
+            {patient?.surgeryType && (
+              <p className="text-lg text-slate-600 mb-4 flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-primary" />
+                Surgery Type: <span className="font-semibold text-primary">{SURGERY_TYPE_LABELS[patient.surgeryType] || patient.surgeryType}</span>
               </p>
             )}
 

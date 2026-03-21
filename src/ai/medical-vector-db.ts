@@ -1,15 +1,16 @@
 // 🧱 PHASE 1 — PERSISTENT VECTOR DATABASE
 // Real ChromaDB integration with Gemini embeddings + Persistent File Storage
 
-import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
+import { ChromaClient } from 'chromadb';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { huggingFaceEmbeddings } from './huggingface-embeddings';
 import { persistentStorage } from './persistent-storage';
+import { SurgeryType } from '@/lib/types';
 
 export interface ProtocolMetadata {
   title: string;
   source: string;
-  surgeryType: string;
+  surgeryType: SurgeryType;
   department: string;
   version?: string;
   uploadDate: string;
@@ -172,7 +173,7 @@ export class MedicalVectorDB {
   }
 
   // System finds relevant protocols (semantic search)
-  async search(query: string, topK: number = 5): Promise<SearchResult[]> {
+  async search(query: string, topK: number = 5, surgeryType?: SurgeryType): Promise<SearchResult[]> {
     await this.initialize();
 
     try {
@@ -180,9 +181,13 @@ export class MedicalVectorDB {
         // Use ChromaDB search
         const embedding = await this.generateEmbedding(query);
         
+        // Build where clause for surgery type filtering
+        const whereClause = surgeryType ? { surgeryType } : {};
+        
         const results = await this.collection.query({
           queryEmbeddings: [embedding],
           nResults: topK,
+          where: whereClause,
           include: ['documents', 'metadatas', 'distances']
         });
 
@@ -197,17 +202,46 @@ export class MedicalVectorDB {
           return {
             content: doc,
             metadata: metadata as ProtocolMetadata,
-            relevanceScore: 1 - distance, // Convert distance to relevance score
+            relevanceScore: 1 - distance, // Convert distance to similarity score
             source: (metadata as ProtocolMetadata).title || 'Unknown Protocol'
           };
         });
       } else {
-        // Use persistent storage search
-        return await persistentStorage.searchDocuments(query, topK);
+        // Get all documents from persistent file storage
+        const allDocuments = await persistentStorage.getAllDocuments();
+        
+        // Filter by surgery type if specified
+        const filteredDocuments = surgeryType 
+          ? allDocuments.filter(doc => doc.metadata.surgeryType === surgeryType)
+          : allDocuments;
+        
+        // Simple keyword matching for fallback
+        const queryLower = query.toLowerCase();
+        const scored = filteredDocuments
+          .map(doc => {
+            let score = 0;
+            const contentLower = doc.content.toLowerCase();
+            const titleLower = doc.metadata.title.toLowerCase();
+            
+            // Keyword matching
+            if (contentLower.includes(queryLower)) score += 2;
+            if (titleLower.includes(queryLower)) score += 3;
+            
+            return { ...doc, relevanceScore: score / 5 }; // Normalize to 0-1
+          })
+          .filter(doc => doc.relevanceScore > 0)
+          .sort((a, b) => b.relevanceScore - a.relevanceScore)
+          .slice(0, topK);
+          
+        return scored;
       }
     } catch (error) {
-      console.error('❌ Search failed:', error);
-      return await persistentStorage.searchDocuments(query, topK);
+      console.error('❌ Failed to search documents:', error);
+      // Fallback to persistent storage
+      const allDocuments = await persistentStorage.getAllDocuments();
+      return surgeryType 
+        ? allDocuments.filter(doc => doc.metadata.surgeryType === surgeryType).slice(0, topK)
+        : allDocuments.slice(0, topK);
     }
   }
 

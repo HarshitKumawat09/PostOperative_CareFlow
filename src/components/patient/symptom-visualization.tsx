@@ -55,7 +55,7 @@ export default function SymptomVisualization({
   recoveryProgress 
 }: SymptomVisualizationProps) {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'recovery'>('recovery');
-  const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomType[]>(['pain', 'fever', 'swelling']);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomType[]>(['pain', 'fever', 'swelling', 'stiffness', 'fatigue', 'nausea', 'dizziness']);
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('line');
 
   // Process data for charts
@@ -282,8 +282,8 @@ export default function SymptomVisualization({
 
             <div>
               <label className="text-sm font-medium">Symptoms</label>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {(['pain', 'fever', 'swelling', 'stiffness', 'fatigue'] as SymptomType[]).map(symptom => (
+              <div className="flex flex-wrap gap-1 mt-1 max-h-32 overflow-y-auto">
+                {(['pain', 'fever', 'swelling', 'stiffness', 'fatigue', 'nausea', 'dizziness', 'shortness_of_breath', 'chest_pain', 'wound_drainage', 'numbness', 'weakness', 'insomnia', 'constipation', 'diarrhea', 'headache', 'muscle_spasms', 'redness', 'warmth', 'other'] as SymptomType[]).map(symptom => (
                   <Badge
                     key={symptom}
                     variant={selectedSymptoms.includes(symptom) ? "default" : "outline"}

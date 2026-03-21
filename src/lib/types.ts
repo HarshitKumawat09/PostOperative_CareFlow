@@ -1,5 +1,33 @@
 import { Timestamp } from "firebase/firestore";
 
+export enum SurgeryType {
+  KNEE_REPLACEMENT = 'knee_replacement',
+  ABDOMINAL_SURGERY = 'abdominal_surgery',
+  CARDIAC_SURGERY = 'cardiac_surgery',
+  HIP_REPLACEMENT = 'hip_replacement',
+  SPINAL_SURGERY = 'spinal_surgery',
+  SHOULDER_SURGERY = 'shoulder_surgery',
+  GALLBLADDER_SURGERY = 'gallbladder_surgery',
+  APPENDECTOMY = 'appendectomy',
+  CESAREAN_SECTION = 'cesarean_section',
+  PROSTATE_SURGERY = 'prostate_surgery',
+  GENERAL_SURGERY = 'general_surgery'
+}
+
+export const SURGERY_TYPE_LABELS = {
+  [SurgeryType.KNEE_REPLACEMENT]: 'Knee Replacement',
+  [SurgeryType.ABDOMINAL_SURGERY]: 'Abdominal Surgery',
+  [SurgeryType.CARDIAC_SURGERY]: 'Cardiac Surgery',
+  [SurgeryType.HIP_REPLACEMENT]: 'Hip Replacement',
+  [SurgeryType.SPINAL_SURGERY]: 'Spinal Surgery',
+  [SurgeryType.SHOULDER_SURGERY]: 'Shoulder Surgery',
+  [SurgeryType.GALLBLADDER_SURGERY]: 'Gallbladder Surgery',
+  [SurgeryType.APPENDECTOMY]: 'Appendectomy',
+  [SurgeryType.CESAREAN_SECTION]: 'Cesarean Section',
+  [SurgeryType.PROSTATE_SURGERY]: 'Prostate Surgery',
+  [SurgeryType.GENERAL_SURGERY]: 'General Surgery'
+} as const;
+
 export interface AssignedDoctorSnapshot {
   id: string;
   firstName?: string;
@@ -23,9 +51,10 @@ export interface UserProfile {
   activeChatRequestId?: string | null;
   age?: number;
   primaryCondition?: string;
-  surgeryType?: string;
+  surgeryType?: SurgeryType;
   postOpDay?: number;
   surgeryDate?: string;
+  onboardingComplete?: boolean;
 }
 
 export interface Doctor {

@@ -13,7 +13,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { UserProfile } from '@/lib/types';
-import { CheckCircle, Info, RefreshCw } from 'lucide-react';
+import { SURGERY_TYPE_LABELS } from '@/lib/types';
+import { CheckCircle, Info, RefreshCw, Stethoscope } from 'lucide-react';
 
 interface PatientTriageClientProps {
   patients: UserProfile[];
@@ -59,6 +60,28 @@ function PatientRow({
     <TableRow onClick={() => onClick(patient.id)} className="cursor-pointer">
       <TableCell className="font-medium">{patient.id.substring(0, 7)}...</TableCell>
       <TableCell>{patient.firstName} {patient.lastName}</TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          {patient.surgeryType ? (
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                {SURGERY_TYPE_LABELS[patient.surgeryType] || patient.surgeryType.replace('_', ' ')}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Stethoscope className="h-4 w-4" />
+              <span className="text-sm">Not specified</span>
+            </div>
+          )}
+          {patient.postOpDay && (
+            <div className="text-xs text-muted-foreground">
+              Day {patient.postOpDay}
+            </div>
+          )}
+        </div>
+      </TableCell>
       <TableCell>
         <Badge
             variant={
@@ -137,6 +160,7 @@ export function PatientTriageClient({ patients }: PatientTriageClientProps) {
             <TableRow>
               <TableHead>Patient ID</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Surgery</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Last Log Date</TableHead>
             </TableRow>

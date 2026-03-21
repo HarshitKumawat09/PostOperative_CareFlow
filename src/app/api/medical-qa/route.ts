@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { recoveryIntelligenceService } from '@/ai/recovery-intelligence';
 import { clinicalKnowledge } from '@/lib/clinical-knowledge';
+import { medicalVectorDB } from '@/ai/medical-vector-db';
+import { SurgeryType } from '@/lib/types';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -185,21 +187,43 @@ export async function POST(request: NextRequest) {
     // Step 1: Extract surgery type and post-op day from context/question
     const { surgeryType, postOpDay, detectedContext } = extractSurgeryContext(question, patientContext);
 
-    // Step 2: Find relevant hospital protocols using clean knowledge base
-    const relevantProtocols = searchClinicalKnowledge(question.trim(), 3);
+    // Step 2: Find relevant hospital protocols using surgery-specific search
+    let relevantProtocols: any[] = [];
+    
+    // First try surgery-specific search from vector database
+    if (surgeryType) {
+      try {
+        console.log(`🔍 Searching for ${surgeryType} protocols for: "${question}"`);
+        const surgeryTypeEnum = surgeryType as SurgeryType;
+        relevantProtocols = await medicalVectorDB.search(question, 3, surgeryTypeEnum);
+        console.log(`📋 Found ${relevantProtocols.length} surgery-specific protocols`);
+      } catch (error) {
+        console.error('❌ Vector search failed, falling back to clinical knowledge:', error);
+      }
+    }
+
+    // Fallback to clinical knowledge if no surgery-specific protocols found
+    if (relevantProtocols.length === 0) {
+      relevantProtocols = searchClinicalKnowledge(question.trim(), 3);
+      console.log(`📚 Using fallback clinical knowledge: ${relevantProtocols.length} protocols`);
+    }
 
     // DEBUG: Log what we're retrieving
     console.log('=== PATIENT Q&A DEBUG INFO ===');
     console.log('Question:', question.trim());
+    console.log('Surgery Type:', surgeryType || 'Not specified');
+    console.log('Post-Op Day:', postOpDay || 'Not specified');
     console.log('Retrieved protocols:', relevantProtocols.length);
-    console.log('Protocol titles:', relevantProtocols.map(p => p.metadata.title));
-    console.log('Content preview:', relevantProtocols.map(p => p.content.substring(0, 200) + '...'));
+    console.log('Protocol titles:', relevantProtocols.map(p => p.metadata?.title || 'Untitled'));
+    console.log('Content preview:', relevantProtocols.map(p => (p.content || '').substring(0, 200) + '...'));
     console.log('============================');
 
     if (relevantProtocols.length === 0) {
       return NextResponse.json({
         success: true,
-        answer: "I don't have specific information about this in our hospital guidelines. Please consult your healthcare provider for this specific question.",
+        answer: surgeryType 
+          ? `I don't have specific information about this for ${surgeryType.replace('_', ' ')} in our hospital guidelines. Please consult your healthcare provider for this specific question.`
+          : "I don't have specific information about this in our hospital guidelines. Please consult your healthcare provider for this specific question.",
         sources: [],
         protocolsUsed: 0,
         riskLevel: "Unknown",
@@ -207,7 +231,8 @@ export async function POST(request: NextRequest) {
         whenToContactDoctor: "Please consult your healthcare provider for this specific question.",
         searchQuery: question,
         responseTime: new Date().toLocaleTimeString(),
-        recoveryIntelligence: null
+        recoveryIntelligence: null,
+        surgeryType: surgeryType || null
       });
     }
 
@@ -357,6 +382,7 @@ ANSWER:`;
       whenToContactDoctor: whenToContact,
       searchQuery: question,
       responseTime: new Date().toLocaleTimeString(),
+      surgeryType: surgeryType || null,
       recoveryIntelligence: recoveryIntelligence ? {
         surgeryType: recoveryIntelligence.surgeryType,
         currentPhase: currentPhase?.phase || 'Unknown',

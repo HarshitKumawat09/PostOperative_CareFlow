@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { UserProfile } from '@/lib/types';
@@ -34,6 +34,7 @@ export interface FirebaseContextState {
   // User profile state
   userProfile: UserProfile | null;
   isUserProfileLoading: boolean;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
 // Return type for useFirebase()
@@ -46,6 +47,7 @@ export interface FirebaseServicesAndUser {
   userError: Error | null;
   userProfile: UserProfile | null;
   isUserProfileLoading: boolean;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
 // Return type for useUser() - specific to user auth state
@@ -131,6 +133,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
+    
+    // Create updateUserProfile function
+    const updateUserProfile = async (updates: Partial<UserProfile>): Promise<void> => {
+      if (!firestore || !userAuthState.user) {
+        throw new Error('Cannot update profile: User not authenticated or Firestore not available');
+      }
+      
+      const userDocRef = doc(firestore, 'users', userAuthState.user.uid);
+      await updateDoc(userDocRef, updates);
+    };
+    
     return {
       areServicesAvailable: servicesAvailable,
       firebaseApp: servicesAvailable ? firebaseApp : null,
@@ -141,6 +154,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       userError: userAuthState.userError,
       userProfile: userProfile,
       isUserProfileLoading: isUserProfileLoading,
+      updateUserProfile,
     };
   }, [firebaseApp, firestore, auth, userAuthState, userProfile, isUserProfileLoading]);
 
@@ -176,6 +190,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     userError: context.userError,
     userProfile: context.userProfile,
     isUserProfileLoading: context.isUserProfileLoading,
+    updateUserProfile: context.updateUserProfile,
   };
 };
 
