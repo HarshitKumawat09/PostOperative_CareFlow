@@ -63,7 +63,7 @@ export class PersistentStorage {
     const document: StoredDocument = {
       id,
       content,
-      metadata: { ...metadata, id },
+      metadata,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -86,6 +86,7 @@ export class PersistentStorage {
 
     for (const [id, doc] of this.documents.entries()) {
       results.push({
+        id,
         content: doc.content,
         metadata: doc.metadata,
         relevanceScore: 1.0,
@@ -115,7 +116,7 @@ export class PersistentStorage {
     const updatedDoc: StoredDocument = {
       ...existingDoc,
       content,
-      metadata: { ...metadata, id },
+      metadata,
       updatedAt: new Date().toISOString()
     };
 
@@ -169,6 +170,7 @@ export class PersistentStorage {
 
       if (score > 0) {
         results.push({
+          id,
           content: doc.content.substring(0, 300) + '...',
           metadata: doc.metadata,
           relevanceScore: Math.min(score / queryWords.length, 1),

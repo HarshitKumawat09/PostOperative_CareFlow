@@ -20,6 +20,7 @@ export interface ProtocolMetadata {
 }
 
 export interface SearchResult {
+  id?: string;
   content: string;
   metadata: ProtocolMetadata;
   relevanceScore: number;
@@ -137,7 +138,7 @@ export class MedicalVectorDB {
   }
 
   // Get all documents for management
-  async getAllDocuments(): Promise<SearchResult[]> {
+  async getAllDocuments(): Promise<Array<{id: string; content: string; metadata: ProtocolMetadata; relevanceScore: number; source: string}>> {
     await this.initialize();
 
     try {
@@ -153,8 +154,10 @@ export class MedicalVectorDB {
 
         return results.documents.map((doc: string, index: number) => {
           const metadata = results.metadatas?.[index] || {};
+          const id = results.ids?.[index] || `doc-${index}`;
 
           return {
+            id,
             content: doc,
             metadata: metadata as ProtocolMetadata,
             relevanceScore: 1.0,
@@ -163,12 +166,26 @@ export class MedicalVectorDB {
         });
       } else {
         // Get all documents from persistent file storage
-        return await persistentStorage.getAllDocuments();
+        const docs = await persistentStorage.getAllDocuments();
+        return docs.map((doc, index) => ({
+          id: doc.id || `doc-${index}`,
+          content: doc.content,
+          metadata: doc.metadata,
+          relevanceScore: doc.relevanceScore || 1.0,
+          source: doc.source || 'Unknown'
+        }));
       }
     } catch (error) {
       console.error('❌ Failed to get all documents:', error);
       // Fallback to persistent storage
-      return await persistentStorage.getAllDocuments();
+      const docs = await persistentStorage.getAllDocuments();
+      return docs.map((doc, index) => ({
+        id: doc.id || `doc-${index}`,
+        content: doc.content,
+        metadata: doc.metadata,
+        relevanceScore: doc.relevanceScore || 1.0,
+        source: doc.source || 'Unknown'
+      }));
     }
   }
 
@@ -198,8 +215,10 @@ export class MedicalVectorDB {
         return results.documents[0].map((doc: string, index: number) => {
           const metadata = results.metadatas?.[0]?.[index] || {};
           const distance = results.distances?.[0]?.[index] || 1;
+          const id = results.ids?.[0]?.[index];
 
           return {
+            id,
             content: doc,
             metadata: metadata as ProtocolMetadata,
             relevanceScore: 1 - distance, // Convert distance to similarity score
@@ -239,9 +258,17 @@ export class MedicalVectorDB {
       console.error('❌ Failed to search documents:', error);
       // Fallback to persistent storage
       const allDocuments = await persistentStorage.getAllDocuments();
-      return surgeryType 
+      const filtered = surgeryType 
         ? allDocuments.filter(doc => doc.metadata.surgeryType === surgeryType).slice(0, topK)
         : allDocuments.slice(0, topK);
+      // Ensure proper SearchResult structure
+      return filtered.map(doc => ({
+        id: doc.id,
+        content: doc.content.substring(0, 300) + (doc.content.length > 300 ? '...' : ''),
+        metadata: doc.metadata,
+        relevanceScore: doc.relevanceScore || 1.0,
+        source: doc.metadata.title || 'Unknown Protocol'
+      }));
     }
   }
 

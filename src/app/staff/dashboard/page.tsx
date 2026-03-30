@@ -7,12 +7,13 @@ import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Bell, BookOpen, Activity, AlertCircle } from 'lucide-react';
+import { Users, Bell, BookOpen, Activity, AlertCircle, Brain } from 'lucide-react';
 
 // Import existing components
 import { PatientTriageClient } from '@/components/dashboard/staff/patient-triage-client';
 import NotificationControls from '@/components/dashboard/staff/notification-controls';
 import SimpleMedicalIngestion from '@/components/dashboard/simple-medical-ingestion';
+import EmbeddingEvaluationDashboard from '@/components/dashboard/staff/embedding-evaluation-dashboard';
 
 export default function StaffDashboardPage() {
   const { firestore, user, userProfile: staffProfile, isUserLoading, isUserProfileLoading } = useFirebase();
@@ -136,6 +137,13 @@ export default function StaffDashboardPage() {
               <BookOpen className="h-4 w-4" />
               Medical Guidelines
             </TabsTrigger>
+            <TabsTrigger 
+              value="evaluation" 
+              className="flex items-center gap-2 py-4 px-2 text-sm font-medium text-slate-600 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-700 rounded-none transition-all hover:text-slate-900"
+            >
+              <Brain className="h-4 w-4" />
+              Embedding Evaluation
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -188,6 +196,10 @@ export default function StaffDashboardPage() {
               <SimpleMedicalIngestion />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="evaluation" className="focus-visible:outline-none">
+          <EmbeddingEvaluationDashboard />
         </TabsContent>
 
       </Tabs>

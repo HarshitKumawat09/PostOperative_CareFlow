@@ -17,10 +17,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required metadata fields
+    const surgeryTypes = metadata.surgeryTypes || metadata.surgeryType;
+    const surgeryType = Array.isArray(surgeryTypes) && surgeryTypes.length > 0 
+      ? surgeryTypes[0] 
+      : (surgeryTypes || 'General');
+    
     const protocolMetadata: ProtocolMetadata = {
       title: metadata.title || 'Untitled Protocol',
       source: metadata.source || 'Unknown Source',
-      surgeryType: metadata.surgeryType || 'General',
+      surgeryType: surgeryType,
       department: metadata.department || 'General',
       version: metadata.version,
       uploadDate: new Date().toISOString(),
