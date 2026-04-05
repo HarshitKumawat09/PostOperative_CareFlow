@@ -6,7 +6,7 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { DailyLog, Appointment, SurgeryType } from '@/lib/types';
 import { SURGERY_TYPE_LABELS } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, differenceInDays } from 'date-fns';
 import { CheckCircle2, Activity, CalendarClock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -44,6 +44,23 @@ export default function PatientDashboardPage() {
   }
 
   const assignedDoctor = patient?.assignedDoctor || null;
+
+  // Calculate dynamic post-op day from surgery date
+  const calculatePostOpDay = () => {
+    if (!patient?.surgeryDate) return null;
+    
+    try {
+      const surgeryDate = parseISO(patient.surgeryDate);
+      const today = new Date();
+      const daysSinceSurgery = differenceInDays(today, surgeryDate);
+      return Math.max(0, daysSinceSurgery); // Don't show negative days
+    } catch (error) {
+      console.error('Error calculating post-op day:', error);
+      return null;
+    }
+  };
+
+  const currentPostOpDay = calculatePostOpDay();
 
   // --- Data Fetching ---
   const appointmentsQuery = useMemoFirebase(() => {
@@ -118,10 +135,10 @@ export default function PatientDashboardPage() {
             <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">
               Welcome back, {patient?.firstName || 'Patient'}.
             </h1>
-            {patient?.postOpDay && (
+            {currentPostOpDay && (
               <p className="text-lg text-slate-600 mb-2 flex items-center gap-2">
                 <CalendarClock className="h-5 w-5 text-primary" />
-                You are on <span className="font-semibold text-primary">Day {patient.postOpDay}</span> of your recovery journey.
+                You are on <span className="font-semibold text-primary">Day {currentPostOpDay}</span> of your recovery journey.
               </p>
             )}
             {patient?.surgeryType && (
@@ -182,7 +199,7 @@ export default function PatientDashboardPage() {
            <SymptomDashboard 
             patientId={user?.uid || ''} 
             surgeryType={patient?.surgeryType}
-            postOpDay={patient?.postOpDay}
+            postOpDay={currentPostOpDay || undefined}
           />
         </div>
 
